@@ -1,6 +1,8 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
+import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { DesertAudioProvider } from "#/components/audio/DesertAudioContext";
+import { TooltipProvider } from "#/components/ui/tooltip";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 
@@ -39,13 +41,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="wrap:anywhere">
-        <Header />
-        {children}
-        <Footer />
+      <body className="wrap:anywhere overflow-x-hidden bg-background font-mono text-foreground antialiased selection:bg-foreground selection:text-background [&_code]:rounded-[7px] [&_code]:border [&_code]:border-border [&_code]:bg-accent [&_code]:px-[7px] [&_code]:py-[2px] [&_code]:text-[0.9em] [&_*:focus-visible]:outline-foreground [&_*::selection]:bg-foreground [&_*::selection]:text-background">
+        <DesertAudioProvider>
+          <TooltipProvider>
+            <Header />
+
+            {children}
+            <Footer />
+          </TooltipProvider>
+        </DesertAudioProvider>
         <TanStackDevtools
           config={{
             position: "bottom-right",
+            hideUntilHover: true,
           }}
           plugins={[
             {

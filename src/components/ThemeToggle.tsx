@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Moon, Sun } from 'lucide-react'
+import { Button } from './ui/button'
 
 type ThemeMode = 'light' | 'dark' | 'auto'
 type ResolvedTheme = Exclude<ThemeMode, 'auto'>
@@ -83,18 +84,20 @@ export default function ThemeToggle() {
   const label = `Theme: ${mode === 'auto' ? `auto (${resolvedTheme})` : mode}. Switch to ${nextTheme} mode.`
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       onClick={toggleMode}
       aria-label={label}
       title={label}
-      className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-foreground hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+      className="size-11 text-foreground"
     >
       {resolvedTheme === 'dark' ? (
-        <Moon aria-hidden="true" size={22} strokeWidth={1.5} />
+        <Moon aria-hidden="true" className="size-[26px]" strokeWidth={1.5} />
       ) : (
-        <Sun aria-hidden="true" size={22} strokeWidth={1.5} />
+        <Sun aria-hidden="true" className="size-[26px]" strokeWidth={1.5} />
       )}
-    </button>
+    </Button>
   )
 }
