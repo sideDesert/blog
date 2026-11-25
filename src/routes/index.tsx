@@ -10,7 +10,6 @@ import {
 import { DesertAudio } from "#/components/audio/DesertAudio";
 import { useDesertAudioContext } from "#/components/audio/DesertAudioContext";
 import Playground from "#/components/playground/Playground";
-import { Button, buttonVariants } from "#/components/ui/button";
 
 export const Route = createFileRoute("/")({ component: Home });
 
