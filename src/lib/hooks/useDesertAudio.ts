@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  readAudioSettings,
+  writeAudioSettings,
+} from "#/lib/playgroundStorage";
 
 export type AudioSettings = {
   wind: number;
@@ -112,6 +116,7 @@ export function useDesertAudio() {
   const [enabled, setEnabled] = useState(true);
   const [running, setRunning] = useState(false);
   const [settings, setSettings] = useState<AudioSettings>(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const playing = enabled && running;
 
   function toggle() {
@@ -165,6 +170,15 @@ export function useDesertAudio() {
 
     audio.master.gain.setTargetAtTime(playing ? settings.volume : 0, t, 0.15);
   }, [settings, playing]);
+
+  useEffect(() => {
+    setSettings(readAudioSettings(DEFAULT_SETTINGS));
+    setSettingsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (settingsLoaded) writeAudioSettings(settings);
+  }, [settings, settingsLoaded]);
 
   function update(key: keyof AudioSettings, value: number) {
     setSettings((previous) => ({

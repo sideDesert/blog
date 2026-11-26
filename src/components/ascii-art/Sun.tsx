@@ -419,7 +419,7 @@ export default function Sun({
 			className={className ?? "w-96"}
 			role="img"
 			aria-label={label}
-			onPointerDown={() => {
+			onPointerEnter={() => {
 				void chime.unlock();
 			}}
 		>

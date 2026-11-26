@@ -45,6 +45,7 @@ export type TerrainAction =
 	| { type: "undoSeam" }
 	| { type: "setReference"; reference: string }
 	| { type: "importConfig"; config: TerrainConfig }
+	| { type: "loadConfig"; config: TerrainConfig }
 	| { type: "importFailed" }
 	| { type: "reset" }
 	| SetViewAction
@@ -197,6 +198,13 @@ export function terrainReducer(
 				config: action.config,
 				selectedId: action.config.shapes[0]?.id ?? "",
 				status: "Terrain imported",
+			};
+
+		case "loadConfig":
+			return {
+				...state,
+				config: action.config,
+				selectedId: action.config.shapes[0]?.id ?? "",
 			};
 
 		case "importFailed":

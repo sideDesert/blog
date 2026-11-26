@@ -42,6 +42,33 @@ npm run check
 ```
 
 
+## Writing posts
+
+Open `src/content/posts` as an Obsidian vault. In **Settings → Files and links**,
+turn off **Use Wikilinks**, choose **Relative path to file** as the new link
+format, and set the attachment folder to `images`.
+
+Put each post directly in the vault, with a title and an optional local cover
+image. Its filename supplies the URL, so `database-rabbithole.md` becomes
+`/posts/database-rabbithole`.
+
+```markdown
+---
+title: Down the Database Rabbithole
+cover: ./images/database-rabbithole.webp
+draft: true
+---
+
+[Eviction policies](./eviction-policies.md)
+
+![Diagram of a buffer pool](./images/buffer-pool.png)
+```
+
+Run `pnpm dev` and open `/posts` to preview drafts. Remove `draft: true` when
+the note is ready to publish. A note without frontmatter stays out of the blog.
+Blog builds exclude draft text. Files committed to the repo follow the repo's
+visibility, and images in the vault can be included in build output.
+
 ## Deploy to Vercel
 
 1. Push this repo to GitHub, GitLab, or Bitbucket

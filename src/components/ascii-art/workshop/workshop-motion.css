@@ -1,0 +1,51 @@
+.workshop-dust {
+	position: absolute;
+	display: flex;
+	gap: 0.21rem;
+	pointer-events: none;
+	color: var(--foreground);
+	font-size: clamp(0.36rem, 1.25cqw, 0.68rem);
+	letter-spacing: 0.11em;
+	line-height: 1;
+	opacity: 0.18;
+}
+
+.workshop-dust span:nth-child(2) {
+	--dust-rise: -7px;
+}
+
+.workshop-dust span:nth-child(3) {
+	--dust-rise: -14px;
+}
+
+.workshop-dust span:nth-child(4) {
+	--dust-rise: -4px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.workshop-dust {
+		animation: workshop-dust-drift 6s ease-in-out infinite;
+	}
+
+	.workshop-dust span {
+		transition:
+			translate 550ms ease-out,
+			opacity 550ms ease-out;
+	}
+
+	.workshop-dust[data-disturbed] span {
+		translate: 0.8rem var(--dust-rise, -10px);
+		opacity: 0.8;
+	}
+}
+
+@keyframes workshop-dust-drift {
+	0%,
+	100% {
+		transform: translateX(-0.7rem);
+	}
+	50% {
+		transform: translateX(0.7rem);
+		opacity: 0.38;
+	}
+}

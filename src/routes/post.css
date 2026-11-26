@@ -1,0 +1,70 @@
+.post-body {
+	line-height: 1.75;
+}
+
+.post-body > * + * {
+	margin-block-start: 1em;
+}
+
+.post-body :is(h1, h2, h3, h4, h5, h6) {
+	margin-block-start: 1.6em;
+	font-size: 1.15em;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.post-body h2 {
+	font-size: 1.5em;
+}
+
+.post-body a {
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+}
+
+.post-body :is(ol, ul) {
+	padding-inline-start: 1.5em;
+}
+
+.post-body ol {
+	list-style: decimal;
+}
+
+.post-body ul {
+	list-style: disc;
+}
+
+.post-body img {
+	max-inline-size: 100%;
+	block-size: auto;
+}
+
+.post-body pre {
+	overflow-x: auto;
+	padding: 1rem;
+	border: 1px solid var(--border);
+	background: var(--surface);
+}
+
+.post-body pre code {
+	padding: 0;
+	border: 0;
+	background: transparent;
+}
+
+.post-body blockquote {
+	border-inline-start: 1px solid var(--rule);
+	padding-inline-start: 1em;
+	color: var(--muted-foreground);
+}
+
+.post-body table {
+	display: block;
+	overflow-x: auto;
+}
+
+.post-body :is(th, td) {
+	border: 1px solid var(--border);
+	padding: 0.25em 0.75em;
+	text-align: start;
+}

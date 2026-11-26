@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { desertAside, desertMain, desertRow } from "#/components/ui/desert-layout";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useReducer, useState } from "react";
 import Landscape from "#/components/ascii-art/Landscape";
 import { DEFAULT_CIRCLES } from "#/components/ascii-art/Sun";
@@ -7,16 +8,23 @@ import {
   createInitialState,
   terrainReducer,
 } from "#/components/ascii-art/terrain/state";
-import { DesertAudio } from "#/components/audio/DesertAudio";
+import { DesertPageIntro } from "#/components/ui/DesertPageIntro";
 import { useDesertAudioContext } from "#/components/audio/DesertAudioContext";
 import Playground from "#/components/playground/Playground";
+import {
+  readShowSunBounds,
+  readSunCircles,
+  readSunPalettes,
+  readTerrainConfig,
+  writeShowSunBounds,
+  writeSunCircles,
+  writeSunPalettes,
+  writeTerrainConfig,
+} from "#/lib/playgroundStorage";
+
+import { posts } from "#/lib/posts";
 
 export const Route = createFileRoute("/")({ component: Home });
-
-const latestPosts = [
-  "Finding stillness in all the Noise",
-  "Building a little shitty malloc",
-];
 
 const desertQuotes = [
   "The desert teaches patience. Mostly because nothing happens.",
@@ -75,15 +83,6 @@ function pickDesertQuote() {
   return desertQuotes[Math.floor(Math.random() * desertQuotes.length)]!;
 }
 
-const homeRow =
-  "min-[56rem]:grid min-[56rem]:grid-cols-[minmax(0,4fr)_minmax(14rem,1.03fr)] min-[56rem]:items-stretch";
-
-const homeAside =
-  "after:mt-[1.375rem] min-[56rem]:border-l min-[56rem]:border-[var(--rule)] min-[56rem]:pl-[clamp(1rem,2.25vw,2.5rem)]";
-
-const mainClass =
-  "mx-auto flex w-[min(100rem,calc(100%-2*clamp(1rem,4.35vw,5rem)))] flex-col text-[0.9375rem] leading-[1.4]";
-
 function LatestPosts({ className }: { className: string }) {
   return (
     <section
@@ -94,18 +93,25 @@ function LatestPosts({ className }: { className: string }) {
         id="latest-posts"
         className="mt-2 mb-4 text-[1.25rem] font-semibold leading-[1.2]"
       >
-        Latest Posts
+        Blog
       </h2>
-      <ul className="mr-6">
-        {latestPosts.map((title) => (
-          <li
-            key={title}
-            className="hover:bg-accent cursor-pointer hover:text-accent-foreground dark:hover:bg-accent/50 p-3"
-          >
-            <span aria-hidden="true">&gt;</span> {title}
-          </li>
-        ))}
-      </ul>
+      {posts.length > 0 ? (
+        <ul className="mr-6">
+          {posts.slice(0, 2).map((post) => (
+            <li key={post.slug}>
+              <Link
+                className="block p-3 hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50"
+                to="/posts/$slug"
+                params={{ slug: post.slug }}
+              >
+                <span aria-hidden="true">&gt;</span> {post.title}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-muted-foreground">Writing in progress.</p>
+      )}
     </section>
   );
 }
@@ -119,13 +125,37 @@ function Home() {
   const [sunPalettes, setSunPalettes] = useState(DEFAULT_SUN_PALETTES);
   const [sunCircles, setSunCircles] = useState(DEFAULT_CIRCLES);
   const [showSunBounds, setShowSunBounds] = useState(false);
+  const [storageLoaded, setStorageLoaded] = useState(false);
   const [playgroundOpen, setPlaygroundOpen] = useState(false);
   const [desertQuote, setDesertQuote] = useState(desertQuotes[0]!);
   const audio = useDesertAudioContext();
 
   useEffect(() => {
     setDesertQuote(pickDesertQuote());
+
+    const config = readTerrainConfig();
+    if (config) terrainDispatch({ type: "loadConfig", config });
+    setSunPalettes(readSunPalettes());
+    setSunCircles(readSunCircles());
+    setShowSunBounds(readShowSunBounds());
+    setStorageLoaded(true);
   }, []);
+
+  useEffect(() => {
+    if (storageLoaded) writeTerrainConfig(terrainState.config);
+  }, [terrainState.config, storageLoaded]);
+
+  useEffect(() => {
+    if (storageLoaded) writeSunPalettes(sunPalettes);
+  }, [sunPalettes, storageLoaded]);
+
+  useEffect(() => {
+    if (storageLoaded) writeSunCircles(sunCircles);
+  }, [sunCircles, storageLoaded]);
+
+  useEffect(() => {
+    if (storageLoaded) writeShowSunBounds(showSunBounds);
+  }, [showSunBounds, storageLoaded]);
 
   const landscape = (
     <Landscape
@@ -140,9 +170,9 @@ function Home() {
 
   if (playgroundOpen) {
     return (
-      <main className={mainClass}>
+      <main className={desertMain}>
         <div
-          className={`${homeRow} flex-1 min-[56rem]:grid-rows-[minmax(clamp(0px,calc(100svh-19rem),min(34rem,36vw)),auto)_auto]`}
+          className={`${desertRow} flex-1 min-[56rem]:grid-rows-[minmax(clamp(0px,calc(100svh-19rem),min(34rem,36vw)),auto)_auto]`}
         >
           {landscape}
           <Playground
@@ -168,40 +198,23 @@ function Home() {
   }
 
   return (
-    <main className={mainClass}>
-      <div className={`${homeRow} flex-1`}>
-        {landscape}
-        <section
-          className={`${homeAside} min-[56rem]:self-stretch min-[56rem]:my-[1.125rem_0.25rem min-[56rem]:py-[1.125rem_0.375rem]`}
-          aria-labelledby="home-title"
-        >
-          <div className="flex justify-between">
-            <div>
-              <h1
-                id="home-title"
-                className="text-[1.625rem] font-semibold leading-[1.2] after:mt-2 after:w-11"
-              >
-                sideDesert
-              </h1>
-            </div>
-            <DesertAudio />
-          </div>
-          <p className="mt-5 text-[0.925rem]">
-            A quiet corner on the internet. Notes, ideas, code and curiosity
-            from the side of the desert.
-          </p>
-          <blockquote className="mt-3.5 italic">
-            “Wide horizons, deeper thoughts.”
-          </blockquote>
-        </section>
-      </div>
+    <main className={desertMain}>
+      <DesertPageIntro
+        title="sideDesert"
+        description="A quiet corner on the internet. Notes, ideas, code and curiosity from the side of the desert."
+        landscape={landscape}
+      >
+        <blockquote className="mt-3.5 italic">
+          “Wide horizons, deeper thoughts.”
+        </blockquote>
+      </DesertPageIntro>
 
-      <div className={`${homeRow} border-t border-(--rule)`}>
+      <div className={`${desertRow} border-t border-(--rule)`}>
         <LatestPosts className="min-[56rem]:-mt-1  min-[56rem]:min-h-[clamp(10rem,calc(100svh-22.5rem),18rem)] py-4" />
         <button
           type="button"
           onClick={() => setDesertQuote(pickDesertQuote())}
-          className={`${homeAside} mt-4 flex w-full max-w-64 cursor-pointer items-start justify-start text-left min-[56rem]:mt-0 min-[56rem]:max-w-none min-[56rem]:min-h-[9.625rem] min-[56rem]:self-stretch min-[56rem]:pt-[1.625rem]`}
+          className={`${desertAside} mt-4 flex w-full max-w-64 cursor-pointer items-start justify-start text-left min-[56rem]:mt-0 min-[56rem]:max-w-none min-[56rem]:min-h-[9.625rem] min-[56rem]:self-stretch min-[56rem]:pt-[1.625rem]`}
           aria-label="Show another desert quote"
         >
           <span className="block min-[56rem]:max-w-[20ch]">{desertQuote}</span>

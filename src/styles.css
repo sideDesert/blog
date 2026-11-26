@@ -78,6 +78,10 @@ nav a[aria-current="page"] {
   color: var(--foreground);
 }
 
+nav a:not([aria-current="page"]):hover {
+  opacity: 0.85;
+}
+
 .night-star {
   opacity: var(--star-opacity);
 }

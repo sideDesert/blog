@@ -3,6 +3,8 @@ import { useEffect, useRef } from "react";
 const textureWidth = 1230;
 const textureHeight = 274;
 
+type CloudCurve = { slope: number; bend: number };
+
 type Cloud = {
 	centerX: number;
 	patternX: number;
@@ -11,6 +13,16 @@ type Cloud = {
 	depth: number;
 	drift: number;
 	seed: number;
+	curve?: CloudCurve;
+};
+
+export type CloudPlacement = {
+	x: number;
+	y: number;
+	spread: number;
+	depth: number;
+	drift: number;
+	curve?: CloudCurve;
 };
 
 const initialClouds: Cloud[] = [
@@ -71,17 +83,30 @@ function drawClouds(
 		spread,
 		depth,
 		seed,
+		curve,
 	} of activeClouds) {
 		if (centerX + spread < 0 || centerX - spread > textureWidth) continue;
 
-		for (let offsetY = -depth; offsetY <= depth; offsetY += 2.7) {
-			for (let offsetX = -spread; offsetX <= spread; offsetX += 3.5) {
+		const rowPitch = curve ? 2.2 : 2.7;
+		const columnPitch = curve ? 2.3 : 3.5;
+		for (let offsetY = -depth; offsetY <= depth; offsetY += rowPitch) {
+			for (let offsetX = -spread; offsetX <= spread; offsetX += columnPitch) {
 				const x = centerX + offsetX;
 				const textureX = patternX + offsetX;
-				const y = (centerY / textureHeight) * height + offsetY;
+				const horizontal = offsetX / spread;
+				const curveOffset = curve
+					? ((horizontal * curve.slope + horizontal ** 2 * curve.bend) *
+							height) /
+						100
+					: 0;
+				const y = (centerY / textureHeight) * height + offsetY + curveOffset;
 				const taper = Math.max(
 					0,
-					1 - Math.hypot(offsetX / spread, (offsetY + offsetX * 0.018) / depth),
+					1 -
+						Math.hypot(
+							horizontal,
+							(offsetY + (curve ? 0 : offsetX * 0.018)) / depth,
+						),
 				);
 				const wisps = 0.6 + 0.4 * Math.sin(offsetX * 0.08 + offsetY * 0.7);
 
@@ -125,9 +150,11 @@ function drawGround(context: CanvasRenderingContext2D, height: number) {
 export default function DesertTexture({
 	layer,
 	className,
+	clouds,
 }: {
 	layer: "sky" | "ground";
 	className?: string;
+	clouds?: readonly CloudPlacement[];
 }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -139,7 +166,18 @@ export default function DesertTexture({
 		let drawHeight = 0;
 		let previousTime = 0;
 		let animationFrame = 0;
-		const activeClouds = initialClouds.map((cloud) => ({ ...cloud }));
+		const activeClouds = clouds
+			? clouds.map(({ x, y, spread, depth, drift, curve }) => ({
+					centerX: (x / 100) * textureWidth,
+					patternX: (x / 100) * textureWidth,
+					centerY: (y / 100) * textureHeight,
+					spread: (spread / 100) * textureWidth,
+					depth,
+					drift,
+					curve,
+					seed: 0,
+				}))
+			: initialClouds.map((cloud) => ({ ...cloud }));
 
 		const paint = () => {
 			context.clearRect(0, 0, textureWidth, drawHeight);
@@ -192,7 +230,7 @@ export default function DesertTexture({
 			motionQuery.removeEventListener("change", syncAnimation);
 			cancelAnimationFrame(animationFrame);
 		};
-	}, [layer]);
+	}, [layer, clouds]);
 
 	return (
 		<canvas

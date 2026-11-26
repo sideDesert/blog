@@ -3,7 +3,7 @@ import { useSandClickAudio } from "#/lib/hooks/useSandClickAudio";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinkClass =
-  "text-muted-foreground no-underline hover:text-foreground hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground";
+  "text-muted-foreground no-underline hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground";
 
 export default function Header() {
   const playSandClick = useSandClickAudio();
@@ -40,7 +40,7 @@ export default function Header() {
             [ home ]
           </Link>
           <Link
-            to="/blog"
+            to="/posts"
             className={navLinkClass}
             activeOptions={{ exact: true }}
             onClick={handleNavClick}

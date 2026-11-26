@@ -40,21 +40,49 @@ export function useMoonChime({
     time: number;
   } | null>(null);
 
-  // Call from a user gesture to unlock browser audio.
+  // Safe to call from any gesture; repeated calls reuse the same context.
   const unlock = useCallback(async () => {
-    if (!audioRef.current) {
-      const ctx = new AudioContext();
-      const master = ctx.createGain();
+    if (!enabled) return;
 
-      master.gain.value = 0;
-      master.connect(ctx.destination);
+    if (!audioRef.current && typeof AudioContext !== "undefined") {
+      try {
+        const ctx = new AudioContext();
+        const master = ctx.createGain();
 
-      audioRef.current = ctx;
-      masterRef.current = master;
+        master.gain.value = 0;
+        master.connect(ctx.destination);
+
+        audioRef.current = ctx;
+        masterRef.current = master;
+      } catch {
+        return;
+      }
     }
 
-    await audioRef.current.resume();
-  }, []);
+    const ctx = audioRef.current;
+
+    if (ctx && ctx.state !== "running") {
+      try {
+        await ctx.resume();
+      } catch {
+        // A later gesture can retry.
+      }
+    }
+  }, [enabled]);
+
+  useEffect(() => {
+    const handleGesture = () => {
+      void unlock();
+    };
+
+    document.addEventListener("pointerdown", handleGesture, true);
+    document.addEventListener("keydown", handleGesture, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleGesture, true);
+      document.removeEventListener("keydown", handleGesture, true);
+    };
+  }, [unlock]);
 
   useEffect(() => {
     const ctx = audioRef.current;
