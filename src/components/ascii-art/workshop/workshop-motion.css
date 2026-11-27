@@ -1,51 +1,67 @@
+.workshop-shooting-star {
+	animation: shooting-star-flight 0.86s linear both;
+}
+
 .workshop-dust {
 	position: absolute;
 	display: flex;
-	gap: 0.21rem;
-	pointer-events: none;
+	gap: 0.26em;
+	transform: translate(-50%, -50%);
 	color: var(--foreground);
-	font-size: clamp(0.36rem, 1.25cqw, 0.68rem);
-	letter-spacing: 0.11em;
+	font-size: clamp(0.4rem, 1.2cqw, 0.85rem);
 	line-height: 1;
-	opacity: 0.18;
+}
+
+.workshop-dust span {
+	--dust-distance: 1.35em;
+	--dust-rise: -0.55em;
+	display: block;
+	opacity: 0.1;
 }
 
 .workshop-dust span:nth-child(2) {
-	--dust-rise: -7px;
+	--dust-distance: 1.75em;
+	--dust-rise: -0.85em;
 }
 
 .workshop-dust span:nth-child(3) {
-	--dust-rise: -14px;
+	--dust-distance: 2.05em;
+	--dust-rise: -1.3em;
 }
 
 .workshop-dust span:nth-child(4) {
-	--dust-rise: -4px;
+	--dust-distance: 2.5em;
+	--dust-rise: -0.65em;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-	.workshop-dust {
-		animation: workshop-dust-drift 6s ease-in-out infinite;
-	}
-
 	.workshop-dust span {
 		transition:
-			translate 550ms ease-out,
-			opacity 550ms ease-out;
+			opacity 440ms ease-out,
+			translate 560ms ease-out;
 	}
 
-	.workshop-dust[data-disturbed] span {
-		translate: 0.8rem var(--dust-rise, -10px);
-		opacity: 0.8;
+	.workshop-dust[data-stirred] span {
+		translate: calc(var(--dust-drift) * var(--dust-distance))
+			calc(var(--dust-lift) * var(--dust-rise));
+		opacity: calc(0.1 + 0.56 * var(--dust-lift));
+		transition-duration: 200ms, 240ms;
 	}
 }
 
-@keyframes workshop-dust-drift {
-	0%,
-	100% {
-		transform: translateX(-0.7rem);
+@keyframes shooting-star-flight {
+	0% {
+		opacity: 0;
+		transform: translate(0, 0);
 	}
-	50% {
-		transform: translateX(0.7rem);
-		opacity: 0.38;
+	16% {
+		opacity: 1;
+	}
+	65% {
+		opacity: 0.9;
+	}
+	100% {
+		opacity: 0;
+		transform: translate(var(--flight-x), var(--flight-y));
 	}
 }

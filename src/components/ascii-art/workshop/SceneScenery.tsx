@@ -2,39 +2,50 @@ import type { ComponentProps } from "react";
 import Cactus from "../cactus";
 import DesertTexture, { type CloudPlacement } from "../DesertTexture";
 import Grass from "../Grass";
-import { type NightStar, NightStars } from "../NightStars";
 import Sun, { DEFAULT_CIRCLES } from "../Sun";
 import {
 	DEFAULT_SUN_PALETTES,
 	DEFAULT_SUN_TRAIL_COLORS,
 	selectSunPalette,
 	selectSunTrailColor,
+	type SunTheme,
 } from "../sun/palette";
-import { useDesertTheme } from "../useDesertTheme";
-import Wind from "../Wind";
 
 export type Plant = {
+	id: `plant-${string}`;
+	label: string;
 	x: number;
 	y: number;
 	width: number;
 } & (
-	| { kind: "cactus"; far?: boolean }
+	| {
+			kind: "cactus";
+			far?: boolean;
+			silhouette?: ComponentProps<typeof Cactus>["silhouette"];
+	  }
 	| { kind: "grass"; variant: ComponentProps<typeof Grass>["variant"] }
 );
 
-export function SceneSky({
+export function SceneCelestial({
 	celestial,
-	stars,
+	theme,
+	color,
+	onToggleColor,
 }: {
 	celestial: { x: number; y: number; width: number };
-	stars?: readonly NightStar[];
+	theme: SunTheme;
+	color: boolean;
+	onToggleColor: () => void;
 }) {
-	const theme = useDesertTheme();
 	return (
-		<div className="pointer-events-none absolute inset-0" aria-hidden="true">
-			<NightStars stars={stars} verticalScale={stars ? 1 : 0.62} />
-			<div
-				className="absolute opacity-85 -translate-x-1/2 -translate-y-1/2"
+		<div className="pointer-events-none absolute inset-0">
+			<button
+				type="button"
+				className="pointer-events-auto absolute z-10 -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border-0 bg-none p-0 opacity-85 focus-visible:outline-1 focus-visible:outline-offset-2"
+				aria-label="Desert colors"
+				aria-pressed={color}
+				title={color ? "Turn colors off" : "Turn colors on"}
+				onClick={onToggleColor}
 				style={{
 					left: `${celestial.x}%`,
 					top: `${celestial.y}%`,
@@ -44,23 +55,25 @@ export function SceneSky({
 				<Sun
 					circles={DEFAULT_CIRCLES}
 					label={theme === "dark" ? "Moon" : "Sun"}
-					palette={selectSunPalette(DEFAULT_SUN_PALETTES, theme, false)}
+					palette={selectSunPalette(DEFAULT_SUN_PALETTES, theme, color)}
 					trailColor={selectSunTrailColor(
 						DEFAULT_SUN_TRAIL_COLORS,
 						theme,
-						false,
+						color,
 					)}
 					className="block w-full"
 				/>
-			</div>
+			</button>
 		</div>
 	);
 }
 
 export function SceneClouds({
 	clouds,
+	color,
 }: {
 	clouds?: readonly CloudPlacement[];
+	color: boolean;
 }) {
 	return (
 		<div
@@ -70,19 +83,30 @@ export function SceneClouds({
 			<DesertTexture
 				layer="sky"
 				clouds={clouds}
-				className="brightness-0 dark:brightness-100"
+				className={
+					color
+						? "filter-[sepia(0.75)_saturate(1.9)_hue-rotate(-8deg)]"
+						: "brightness-0 dark:brightness-100"
+				}
 			/>
 		</div>
 	);
 }
 
-export function ScenePlants({ plants }: { plants: readonly Plant[] }) {
+export function ScenePlants({
+	plants,
+	color,
+}: {
+	plants: readonly Plant[];
+	color: boolean;
+}) {
 	return (
 		<div className="pointer-events-none absolute inset-0" aria-hidden="true">
 			{plants.map((plant) => (
 				<div
-					key={plant.x}
-					className={`absolute -translate-x-1/2 -translate-y-full ${plant.kind === "grass" ? "opacity-80 saturate-0" : ""}`}
+					key={plant.id}
+					data-scene-plant={plant.id}
+					className={`absolute -translate-x-1/2 -translate-y-full ${plant.kind === "grass" ? "opacity-80" : ""}`}
 					style={{
 						left: `${plant.x}%`,
 						top: `${plant.y}%`,
@@ -92,26 +116,20 @@ export function ScenePlants({ plants }: { plants: readonly Plant[] }) {
 					{plant.kind === "cactus" ? (
 						<Cactus
 							width="100%"
-							darkGreen={false}
+							darkGreen={color}
 							far={plant.far}
-							className="scale-x-[0.88] opacity-75"
+							silhouette={plant.silhouette}
+							className={`scale-x-[0.88] ${plant.silhouette === "workshop" ? "opacity-[0.68]" : "opacity-75"}`}
 						/>
 					) : (
-						<Grass variant={plant.variant} color={false} />
+						<Grass
+							variant={plant.variant}
+							color={color}
+							windDelay={plant.x * -0.11}
+						/>
 					)}
 				</div>
 			))}
-		</div>
-	);
-}
-
-export function SceneWind() {
-	return (
-		<div
-			className="pointer-events-none absolute inset-x-0 top-[45%] bottom-[14%] opacity-60"
-			aria-hidden="true"
-		>
-			<Wind color={false} distant={false} />
 		</div>
 	);
 }

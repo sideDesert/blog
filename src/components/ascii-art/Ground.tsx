@@ -1,7 +1,6 @@
 import Cactus from "./cactus";
 import DesertTexture from "./DesertTexture";
 import Grass from "./Grass";
-import Wind from "./Wind";
 
 // Depth runs from the horizon (0) to the foreground edge (100).
 const plants = [
@@ -62,7 +61,6 @@ export default function Ground({
 				>
 					{plant.kind === "cactus" ? (
 						<>
-							<Wind color={color} distant={plant.distant} />
 							<Cactus
 								width="100%"
 								darkGreen={color}
@@ -80,7 +78,11 @@ export default function Ground({
 							)}
 						</>
 					) : (
-						<Grass variant={plant.variant} color={color} />
+						<Grass
+							variant={plant.variant}
+							color={color}
+							windDelay={plant.x * -0.11}
+						/>
 					)}
 				</div>
 			))}

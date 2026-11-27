@@ -564,8 +564,8 @@ export function createDotPaths(
 	dotSize: number,
 ) {
 	const frame = terrainFrame;
-	const squareRowStep =
-		(gridSize * frame.height * frame.aspectRatio) / frame.width;
+	// Landscape places the terrain in 39.28% of the artwork's width.
+	const squareRowStep = (gridSize * frame.height) / (frame.width * 0.3928);
 	const rowStep = squareRowStep * rowPitchRatio;
 	const lightStamps = createStamps(gridSize * dotSize, squareRowStep * dotSize);
 	const darkStamps = createStamps(

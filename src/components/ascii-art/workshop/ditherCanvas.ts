@@ -1,43 +1,218 @@
 import {
+	desertDitherColumns,
 	ditherGlyphs,
 	glyphSize,
 	glyphSizeSteps,
 	rowPitchRatio,
 	sampleGlyphCell,
 } from "../ditherGlyphs";
+import { materialAt } from "./materialInk";
 
-function sampleInk(frame: ImageData, x: number, y: number) {
-	const { data, width } = frame;
-	const offset = (Math.floor(y) * width + Math.floor(x)) * 4;
+function pixelInk(data: ImageData["data"], offset: number) {
 	const luminance =
 		data[offset] * 0.21 + data[offset + 1] * 0.72 + data[offset + 2] * 0.07;
 	return (data[offset + 3] / 255) * Math.max(0, luminance - 17);
 }
 
+function sampleInk(frame: ImageData, x: number, y: number) {
+	const { data, width, height } = frame;
+	const sampleX = Math.max(0, x - 0.5);
+	const sampleY = Math.max(0, y - 0.5);
+	const left = Math.floor(sampleX);
+	const top = Math.floor(sampleY);
+	const right = Math.min(left + 1, width - 1);
+	const bottom = Math.min(top + 1, height - 1);
+	const blendX = sampleX - left;
+	const blendY = sampleY - top;
+	const upper =
+		pixelInk(data, (top * width + left) * 4) * (1 - blendX) +
+		pixelInk(data, (top * width + right) * 4) * blendX;
+	const lower =
+		pixelInk(data, (bottom * width + left) * 4) * (1 - blendX) +
+		pixelInk(data, (bottom * width + right) * 4) * blendX;
+	return upper * (1 - blendY) + lower * blendY;
+}
+
 export type DitherStyle = "fine" | "soft";
+
+export const workshopWidth = 1000;
+export const workshopHeight = 500;
+
+type DitherBounds = {
+	left: number;
+	top: number;
+	right: number;
+	bottom: number;
+};
+
+type DitherDetail = DitherBounds & {
+	path: string;
+	pitchScale?: number;
+	style?: DitherStyle;
+};
+
+export type DitherPaint = {
+	style: DitherStyle;
+	palette?: ReturnType<typeof readDesertInks>;
+	detail?: readonly DitherDetail[];
+};
+
+export function readDesertInks(element: HTMLElement, dark: boolean) {
+	const css = getComputedStyle(element);
+	const read = (name: string) => {
+		const hex = css.getPropertyValue(`--desert-${name}`).trim();
+		return [1, 3, 5].map((offset) =>
+			Number.parseInt(hex.slice(offset, offset + 2), 16),
+		);
+	};
+	const sand = [
+		"sand-shadow",
+		"sand-deep",
+		"sand-muted",
+		"sand",
+		"sand-rim",
+		"sand-highlight",
+	].map(read);
+	const grass = read("grass");
+	const materialShades = (name: string) => {
+		const base = read(name);
+		return Array.from({ length: 256 }, (_, ink) => {
+			const gain = dark
+				? Math.min(1.4, 0.52 + ink / 150)
+				: Math.max(0.47, 0.97 - ink / 430);
+			return `rgb(${base
+				.map((channel) => Math.round(Math.min(255, channel * gain)))
+				.join(" ")})`;
+		});
+	};
+	return {
+		wood: materialShades("wood"),
+		fabric: materialShades("fabric"),
+		metal: materialShades("metal"),
+		paper: materialShades("paper"),
+		hemp: materialShades("hemp"),
+		flame: materialShades("flame"),
+		sand: Array.from({ length: 256 }, (_, ink) => {
+			const level = dark
+				? Math.min(5, 1.2 + ink / 45)
+				: Math.max(0, 3.8 - ink / 52);
+			const left = Math.floor(level);
+			const blend = level - left;
+			const right = Math.min(left + 1, sand.length - 1);
+			const channels = sand[left].map((channel, index) =>
+				Math.round(channel + (sand[right][index] - channel) * blend),
+			);
+			return `rgb(${channels.join(" ")})`;
+		}),
+		grass: Array.from(
+			{ length: 256 },
+			(_, ink) =>
+				`rgb(${grass.map((channel) => Math.round(channel * (0.66 + ink / 235))).join(" ")})`,
+		),
+	};
+}
 
 export function ditherCanvas(
 	ctx: CanvasRenderingContext2D,
-	style: DitherStyle,
+	source: CanvasRenderingContext2D,
+	paint: DitherPaint,
+	origin = { x: 0, y: 0 },
 ) {
-	const { width, height } = ctx.canvas;
-	const frame = ctx.getImageData(0, 0, width, height);
+	const { width, height } = source.canvas;
+	const frame = source.getImageData(0, 0, width, height);
 	ctx.clearRect(0, 0, width, height);
 	ctx.fillStyle = "#efe9da";
 
-	const columnPitch = width / 740;
+	const bounds = {
+		left: origin.x,
+		top: origin.y,
+		right: origin.x + width,
+		bottom: origin.y + height,
+	};
+	const pitch = workshopWidth / desertDitherColumns;
+	const details = paint.detail?.filter(
+		(detail) =>
+			detail.right > bounds.left &&
+			detail.bottom > bounds.top &&
+			detail.left < bounds.right &&
+			detail.top < bounds.bottom,
+	);
+	if (!details?.length) {
+		drawMarks(ctx, frame, paint, origin, bounds, pitch);
+		return;
+	}
+
+	const transform = new DOMMatrix().translate(-origin.x, -origin.y);
+	const outsideDetail = new Path2D();
+	const detailPaths = details.map((detail) => {
+		const path = new Path2D();
+		path.addPath(new Path2D(detail.path), transform);
+		outsideDetail.addPath(path);
+		return { detail, path };
+	});
+	outsideDetail.rect(0, 0, width, height);
+	ctx.save();
+	ctx.clip(outsideDetail, "evenodd");
+	drawMarks(ctx, frame, paint, origin, bounds, pitch);
+	ctx.restore();
+
+	for (const { detail, path } of detailPaths) {
+		const detailBounds = {
+			left: Math.max(bounds.left, detail.left - 1),
+			top: Math.max(bounds.top, detail.top - 1),
+			right: Math.min(bounds.right, detail.right + 1),
+			bottom: Math.min(bounds.bottom, detail.bottom + 1),
+		};
+		ctx.save();
+		ctx.clip(path, "evenodd");
+		drawMarks(
+			ctx,
+			frame,
+			detail.style ? { ...paint, style: detail.style } : paint,
+			origin,
+			detailBounds,
+			pitch * (detail.pitchScale ?? 0.78),
+		);
+		ctx.restore();
+	}
+}
+
+function drawMarks(
+	ctx: CanvasRenderingContext2D,
+	frame: ImageData,
+	{ style, palette }: DitherPaint,
+	origin: { x: number; y: number },
+	bounds: DitherBounds,
+	columnPitch: number,
+) {
+	const { width } = frame;
 	const softHighlights = style === "soft";
 	const rowPitch = columnPitch * rowPitchRatio;
-	for (let column = 0; (column + 0.5) * columnPitch < width; column++) {
-		for (let row = 0; (row + 0.5) * rowPitch < height; row++) {
-			const x = (column + 0.5) * columnPitch;
-			const y = (row + 0.5) * rowPitch;
+	const firstColumn = Math.max(0, Math.floor(bounds.left / columnPitch));
+	const firstRow = Math.max(0, Math.floor(bounds.top / rowPitch));
+	const lastColumn = bounds.right / columnPitch - 0.5;
+	const lastRow = bounds.bottom / rowPitch - 0.5;
+
+	for (let column = firstColumn; column < lastColumn; column++) {
+		for (let row = firstRow; row < lastRow; row++) {
+			const x = (column + 0.5) * columnPitch - origin.x;
+			const y = (row + 0.5) * rowPitch - origin.y;
 			const ink = sampleInk(frame, x, y);
 			if (!ink) continue;
 			const cell = sampleGlyphCell(column, row);
 			const intensity = Math.min(1, ink / 140);
 			const size = glyphSize(intensity, cell.rank) / glyphSizeSteps;
 			if (!size) continue;
+			if (palette) {
+				const offset =
+					(Math.max(0, Math.floor(y)) * width + Math.max(0, Math.floor(x))) * 4;
+				const material = materialAt(
+					frame.data[offset],
+					frame.data[offset + 1],
+					frame.data[offset + 2],
+				);
+				ctx.fillStyle = palette[material][Math.round(ink)];
+			}
 			const highlight = Math.min(1, Math.max(0, (ink - 18) / 88));
 			const footprint = size * (1 + 0.52 * highlight);
 			const markWidth = columnPitch * 0.76 * 0.83 * footprint;

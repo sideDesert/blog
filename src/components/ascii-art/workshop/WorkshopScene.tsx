@@ -1,287 +1,67 @@
-import { type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
-import { campsiteLayers, campsitePlants } from "./Campsite";
-import { type DitherStyle, ditherCanvas } from "./ditherCanvas";
-import { fieldNotesLayers, fieldNotesPlants } from "./FieldNotes";
-import { blogStars, projectStars } from "./referenceStars";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { NightStars } from "../NightStars";
+import { useDesertColor } from "../useDesertColor";
+import { useDesertTheme } from "../useDesertTheme";
 import {
-	type Plant,
-	SceneClouds,
-	ScenePlants,
-	SceneSky,
-	SceneWind,
-} from "./SceneScenery";
+	type DitherPaint,
+	readDesertInks,
+	workshopHeight,
+	workshopWidth,
+} from "./ditherCanvas";
+import { DustGlyphs, settleDust, stirDust } from "./DustGlyphs";
+import { fieldNotesDither } from "./FieldNotes";
 import {
-	drawAwning,
-	drawAwningSupports,
-	drawBenchRadio,
-	drawBenchSupplies,
-	drawCableSpool,
-	drawDesertTufts,
-	drawDrawerCabinet,
-	drawEquipmentCases,
-	drawFloorCable,
-	drawHangingRope,
-	drawLamp,
-	drawLamplight,
-	drawLeanTo,
-	drawPebbles,
-	drawRadioTower,
-	drawRocks,
-	drawRoofTruss,
-	drawShelves,
-	drawStorageCrates,
-	drawToolRack,
-	drawTowerShelter,
-	drawTowerSignal,
-	drawUnderBenchBins,
-	drawWorkbench,
-	drawWorkbenchShadow,
-	drawWorkshopFrame,
-} from "./WorkshopProps";
+	beaconPatch,
+	createPatch,
+	lampLayers,
+	lampPatch,
+	motionPatches,
+	paintWorkshop,
+} from "./paintScene";
 import {
-	drawDistantRidge,
-	drawValleyBanks,
-	drawWorkshopTerrain,
-} from "./WorkshopTerrain";
+	radioTowerDither,
+	towerAntenna,
+	towerSignalLayers,
+} from "./RadioTower";
+import { SceneCelestial, SceneClouds, ScenePlants } from "./SceneScenery";
+import { scenes, type WorkshopLayer, type WorkshopSceneName } from "./scenes";
+import { ShootingStar } from "./ShootingStar";
 import "./workshop-motion.css";
 
-function drawWind(ctx: CanvasRenderingContext2D) {
-	ctx.save();
-	ctx.strokeStyle = "#5c574c";
-	ctx.lineWidth = 0.75;
-	ctx.setLineDash([0.4, 2, 0.75, 4]);
-	ctx.stroke(
-		new Path2D(
-			"M72 269c93-16 154 6 242-9m241 43c69 21 125 3 200-9m30 86c67-6 138-11 208 3",
-		),
-	);
-	ctx.restore();
-}
+const lampFlicker = [0.28, 0.82, 0.48, 1, 0.72, 1];
 
-const workshopPlants = [
-	{ kind: "cactus", x: 15, y: 81.2, width: 6.6 },
-	{ kind: "grass", variant: "sparse", x: 5.2, y: 76, width: 2.7 },
-	{ kind: "grass", variant: "leaning", x: 29, y: 81, width: 2.4 },
-	{ kind: "grass", variant: "spreading", x: 71.5, y: 83, width: 3.1 },
-	{ kind: "grass", variant: "open", x: 84.3, y: 83, width: 3 },
-	{ kind: "grass", variant: "sparse", x: 90.4, y: 77, width: 2.4 },
-	{ kind: "grass", variant: "leaning", x: 94.9, y: 81, width: 3.8 },
-] satisfies readonly Plant[];
+const lampRimDetail = "M453 337q17-2.5 38-.5l-1 4.5q-18 2-36 0Z";
+const benchHardwareDetail = "M402 367H427V382H402ZM426 392H452V412H426Z";
 
-function drawWorkshopTufts(ctx: CanvasRenderingContext2D) {
-	drawDesertTufts(ctx, [
-		[176, 460, 70, 43],
-		[666, 467, 54, 34],
-		[704, 410, 42, 24],
-	]);
-}
-
-const workshopLayers = [
-	{ id: "terrain", label: "Terrain", draw: drawWorkshopTerrain },
-	{ id: "distant-ridge", label: "Distant ridge faces", draw: drawDistantRidge },
-	{ id: "valley-banks", label: "Valley banks", draw: drawValleyBanks },
-	{ id: "wind", label: "Wind", draw: drawWind },
-	{ id: "tower", label: "Radio tower", draw: drawRadioTower },
+const projectsDither = [
+	...radioTowerDither,
 	{
-		id: "tower-shelter",
-		label: "Tower equipment shelter",
-		draw: drawTowerShelter,
+		path: `M381 323H530V403H559V423H498V413H423V406H381Z ${lampRimDetail} ${benchHardwareDetail}`,
+		left: 381,
+		top: 323,
+		right: 559,
+		bottom: 423,
 	},
-	{ id: "signal", label: "Tower signal", draw: drawTowerSignal },
-	{ id: "rocks", label: "Rocks", draw: drawRocks },
-	{ id: "pebbles", label: "Pebbles", draw: drawPebbles },
-	{ id: "tufts", label: "Foreground yuccas", draw: drawWorkshopTufts },
-	{ id: "frame", label: "Workshop frame", draw: drawWorkshopFrame },
-	{ id: "roof-truss", label: "Roof truss", draw: drawRoofTruss },
-	{ id: "lean-to", label: "Lean-to", draw: drawLeanTo },
-	{ id: "shelves", label: "Shelves", draw: drawShelves },
-	{ id: "wrenches", label: "Tool rack", draw: drawToolRack },
-	{ id: "lamplight", label: "Lamplight", draw: drawLamplight },
-	{ id: "lamp", label: "Lamp", draw: drawLamp },
-	{ id: "bench-shadow", label: "Workbench shadow", draw: drawWorkbenchShadow },
-	{ id: "bench", label: "Workbench", draw: drawWorkbench },
-	{ id: "bench-radio", label: "Bench radio", draw: drawBenchRadio },
-	{ id: "supplies", label: "Workbench supplies", draw: drawBenchSupplies },
-	{ id: "awning-supports", label: "Awning supports", draw: drawAwningSupports },
-	{ id: "awning", label: "Cloth awning", draw: drawAwning },
-	{ id: "rope", label: "Hanging rope", draw: drawHangingRope },
-	{ id: "cable-spool", label: "Cable spool", draw: drawCableSpool },
-	{ id: "floor-cable", label: "Floor cable", draw: drawFloorCable },
-	{ id: "crates", label: "Crates", draw: drawStorageCrates },
-	{ id: "equipment-cases", label: "Equipment cases", draw: drawEquipmentCases },
-	{ id: "drawer-cabinet", label: "Drawer cabinet", draw: drawDrawerCabinet },
-	{ id: "bench-bins", label: "Bins under the bench", draw: drawUnderBenchBins },
+	{
+		path: benchHardwareDetail,
+		left: 402,
+		top: 367,
+		right: 452,
+		bottom: 412,
+		pitchScale: 0.63,
+		style: "fine",
+	},
+	{
+		path: lampRimDetail,
+		left: 453,
+		top: 334,
+		right: 491,
+		bottom: 343,
+		pitchScale: 0.71,
+		style: "fine",
+	},
+	{ path: "M337 338h41v68h-41Z", left: 337, top: 338, right: 378, bottom: 406 },
 ] as const;
-
-export const scenes = {
-	projects: {
-		layers: workshopLayers,
-		plants: workshopPlants,
-		celestial: { x: 75.45, y: 14.55, width: 9.35 },
-		stars: projectStars,
-		clouds: [
-			{
-				x: 27,
-				y: 15.8,
-				spread: 15,
-				depth: 8,
-				drift: 3,
-				curve: { slope: 0.7, bend: 3.8 },
-			},
-			{
-				x: 6,
-				y: 31.5,
-				spread: 8,
-				depth: 5,
-				drift: -4,
-				curve: { slope: -2, bend: 0.5 },
-			},
-			{
-				x: 47,
-				y: 34.3,
-				spread: 13,
-				depth: 7,
-				drift: 4,
-				curve: { slope: -0.8, bend: 3.1 },
-			},
-			{
-				x: 88,
-				y: 26.8,
-				spread: 13,
-				depth: 7,
-				drift: -3,
-				curve: { slope: -5, bend: -1 },
-			},
-			{
-				x: 72,
-				y: 38.8,
-				spread: 15,
-				depth: 6,
-				drift: 5,
-				curve: { slope: 0, bend: 4 },
-			},
-		],
-		windLayer: "wind",
-		ditherStyle: "fine" satisfies DitherStyle,
-		label: "A desert workshop with a radio tower, mesas and rocks",
-	},
-	blog: {
-		layers: fieldNotesLayers,
-		plants: fieldNotesPlants,
-		celestial: { x: 74.95, y: 14.4, width: 7.3 },
-		stars: blogStars,
-		clouds: [
-			{
-				x: 21,
-				y: 16,
-				spread: 13,
-				depth: 9,
-				drift: 3,
-				curve: { slope: -0.4, bend: 2.8 },
-			},
-			{
-				x: 35,
-				y: 32,
-				spread: 6,
-				depth: 3,
-				drift: -4,
-				curve: { slope: -0.4, bend: 0.5 },
-			},
-			{
-				x: 58,
-				y: 27.1,
-				spread: 9,
-				depth: 5,
-				drift: 4,
-				curve: { slope: -1.3, bend: 0.2 },
-			},
-			{
-				x: 69,
-				y: 38,
-				spread: 5,
-				depth: 2.5,
-				drift: -3,
-				curve: { slope: 0.2, bend: 0.1 },
-			},
-			{
-				x: 94,
-				y: 26.4,
-				spread: 8,
-				depth: 6,
-				drift: 3,
-				curve: { slope: -3.5, bend: 0 },
-			},
-		],
-		windLayer: "dust",
-		ditherStyle: "soft" satisfies DitherStyle,
-		label:
-			"A field notebook on a ledge overlooking a winding trail and a stone lookout",
-	},
-	about: {
-		layers: campsiteLayers,
-		plants: campsitePlants,
-		celestial: { x: 61.4, y: 14, width: 10 },
-		stars: undefined,
-		clouds: undefined,
-		windLayer: "camp-wind",
-		ditherStyle: "fine" satisfies DitherStyle,
-		label: "A tent and campfire in a quiet desert canyon",
-	},
-} as const;
-
-export type WorkshopSceneName = keyof typeof scenes;
-export type WorkshopLayer =
-	| (typeof scenes)[WorkshopSceneName]["layers"][number]["id"]
-	| "sky"
-	| "clouds"
-	| "plants";
-
-export const sceneryLayers = [
-	{ id: "sky", label: "Stars and sun or moon" },
-	{ id: "clouds", label: "Cloud wisps" },
-	{ id: "plants", label: "Cactus and grasses" },
-] as const;
-
-const width = 1000;
-const height = 500;
-const beaconBounds = { x: 648, y: 216, width: 76, height: 54 };
-type BeaconPhase = "idle" | "off" | "bright";
-
-const dustPatches = {
-	projects: [
-		[13, 87],
-		[33, 84],
-		[59, 90],
-		[81, 82],
-	],
-	blog: [
-		[20, 83],
-		[38, 73],
-		[60, 79],
-		[87, 72],
-	],
-	about: [
-		[14, 84],
-		[48, 87],
-		[73, 82],
-		[91, 87],
-	],
-};
-
-function nudgeDust(event: PointerEvent<HTMLDivElement>) {
-	if (event.pointerType !== "mouse") return;
-	const stage = event.currentTarget;
-	const bounds = stage.getBoundingClientRect();
-	const x = ((event.clientX - bounds.left) / bounds.width) * 100;
-	const y = ((event.clientY - bounds.top) / bounds.height) * 100;
-	for (const patch of stage.querySelectorAll<HTMLElement>(
-		"[data-dust-patch]",
-	)) {
-		const dx = x - Number.parseFloat(patch.style.left);
-		const dy = y - Number.parseFloat(patch.style.top);
-		patch.toggleAttribute("data-disturbed", Math.hypot(dx, dy * 0.6) < 12);
-	}
-}
 
 export function WorkshopScene({
 	scene = "projects",
@@ -293,135 +73,230 @@ export function WorkshopScene({
 	dither?: boolean;
 }) {
 	const canvas = useRef<HTMLCanvasElement>(null);
-	const {
-		layers,
-		plants,
-		label,
-		celestial,
-		stars,
-		clouds,
-		windLayer,
-		ditherStyle,
-	} = scenes[scene];
-	const [beacon, setBeacon] = useState<BeaconPhase>("idle");
-	const beaconTimer = useRef<number | undefined>(undefined);
-	const hasTower =
-		scene === "projects" && !hidden?.has("tower") && !hidden?.has("signal");
-	const hasWind = !hidden?.has(windLayer);
-	const phase = hasTower ? beacon : "idle";
-	const paintPlan = useMemo(
-		() => ({ layers, hidden, dither, ditherStyle, hasTower }),
-		[layers, hidden, dither, ditherStyle, hasTower],
+	const drawBeacon = useRef<((brightness: number) => void) | undefined>(
+		undefined,
 	);
-	const beaconCache = useRef<{
-		plan: typeof paintPlan;
-		frames: Map<BeaconPhase, ImageData>;
-	} | null>(null);
+	const beaconTimer = useRef<number | undefined>(undefined);
+	const { colorEnabled, toggleColor } = useDesertColor();
+	const theme = useDesertTheme();
+	const [motion, setMotion] = useState(false);
+	const [displayScale, setDisplayScale] = useState(1);
+	const rasterScale = dither ? displayScale : 1;
+	const { layers, plants, dust, label, celestial, stars, clouds, ditherStyle } =
+		scenes[scene];
+	const visibleClouds = useMemo(() => {
+		const visible = clouds?.filter(({ id }) => !hidden?.has(id));
+		return visible?.length === clouds?.length ? clouds : visible;
+	}, [clouds, hidden]);
+	const hasTower =
+		scene === "projects" &&
+		!hidden?.has(towerAntenna) &&
+		!hidden?.has(towerSignalLayers[0]);
+	const visibleDust = dust.filter(({ id }) => !hidden?.has(id));
+	const hasDust = visibleDust.length > 0;
 
-	useEffect(() => () => window.clearTimeout(beaconTimer.current), []);
-
-	function blinkBeacon() {
-		window.clearTimeout(beaconTimer.current);
-		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-			setBeacon("bright");
-			beaconTimer.current = window.setTimeout(() => setBeacon("idle"), 600);
-			return;
-		}
-		const flashes = 2 + Number(Math.random() >= 0.5);
-		let phase = 0;
-		const next = () => {
-			if (phase === 2 * flashes) {
-				setBeacon("idle");
-				return;
-			}
-			const isLit = phase % 2 === 1;
-			setBeacon(isLit ? "bright" : "off");
-			phase++;
-			beaconTimer.current = window.setTimeout(next, isLit ? 250 : 200);
+	useEffect(() => {
+		const element = canvas.current;
+		if (!element) return;
+		const measure = () =>
+			setDisplayScale(
+				element.clientWidth * window.devicePixelRatio > workshopWidth ? 2 : 1,
+			);
+		const size = new ResizeObserver(measure);
+		size.observe(element);
+		window.addEventListener("resize", measure);
+		measure();
+		return () => {
+			size.disconnect();
+			window.removeEventListener("resize", measure);
 		};
-		next();
-	}
+	}, []);
+
+	useEffect(() => {
+		const preference = window.matchMedia(
+			"(prefers-reduced-motion: no-preference)",
+		);
+		const sync = () => setMotion(preference.matches);
+		sync();
+		preference.addEventListener("change", sync);
+		return () => preference.removeEventListener("change", sync);
+	}, []);
 
 	useEffect(() => {
 		const ctx = canvas.current?.getContext("2d", { willReadFrequently: true });
 		if (!ctx) return;
-		const { layers, hidden, dither, ditherStyle, hasTower } = paintPlan;
-		const bounds = beaconBounds;
-		if (beaconCache.current?.plan !== paintPlan) {
-			beaconCache.current = hasTower
-				? { plan: paintPlan, frames: new Map() }
-				: null;
-		}
-		const frames = beaconCache.current?.frames;
-		const cached = frames?.get(phase);
-		if (cached) {
-			ctx.putImageData(cached, bounds.x, bounds.y);
-			return;
+		ctx.setTransform(rasterScale, 0, 0, rasterScale, 0, 0);
+		const visibleLayers = layers.filter((layer) => !hidden?.has(layer.id));
+		const paint: DitherPaint | undefined = dither
+			? {
+					style: ditherStyle,
+					palette: colorEnabled
+						? readDesertInks(ctx.canvas, theme === "dark")
+						: undefined,
+					detail:
+						scene === "blog"
+							? fieldNotesDither(visibleLayers.map(({ id }) => id))
+							: scene === "projects"
+								? projectsDither
+								: undefined,
+				}
+			: undefined;
+		paintWorkshop(ctx, visibleLayers, paint);
+
+		const beacon = hasTower
+			? createPatch(ctx, visibleLayers, beaconPatch, paint)
+			: undefined;
+		if (beacon) {
+			const { x, y, width, height } = beaconPatch.bounds;
+			const idle = ctx.getImageData(
+				x * rasterScale,
+				y * rasterScale,
+				width * rasterScale,
+				height * rasterScale,
+			);
+			drawBeacon.current = (brightness) => {
+				if (brightness === 1)
+					ctx.putImageData(idle, x * rasterScale, y * rasterScale);
+				else beacon(() => brightness);
+			};
 		}
 
-		ctx.clearRect(0, 0, width, height);
-		for (const layer of layers) {
-			if (hidden?.has(layer.id)) continue;
-			ctx.save();
-			if (layer.id === "signal" && hasTower) {
-				if (phase !== "off") drawTowerSignal(ctx, phase === "bright");
-			} else {
-				layer.draw(ctx);
+		const patches = motion
+			? motionPatches[scene]
+					.map((patch) => createPatch(ctx, visibleLayers, patch, paint))
+					.filter((patch) => patch !== undefined)
+			: [];
+		const lamp =
+			motion &&
+			scene === "projects" &&
+			visibleLayers.some(({ id }) => lampLayers.some((layer) => id === layer))
+				? createPatch(ctx, visibleLayers, lampPatch, paint)
+				: undefined;
+		let frameId: number | undefined;
+		let lastPaint: number | undefined;
+		let seconds = 0;
+		let flickerAt = 5 + Math.random() * 2;
+		let flickerStarted = -Infinity;
+		let brightness = 1;
+		const amountFor = (layer: WorkshopLayer) =>
+			lampLayers.some((id) => id === layer) ? brightness : seconds;
+		// Use the same compositing path for the first and subsequent steady frames.
+		lamp?.(amountFor);
+
+		function animate(timestamp: number) {
+			lastPaint ??= timestamp;
+			const elapsed = timestamp - lastPaint;
+			if (elapsed >= 1000 / 24) {
+				seconds += elapsed / 1000;
+				if (lamp && seconds >= flickerAt) {
+					flickerStarted = seconds;
+					flickerAt = seconds + 5 + Math.random() * 2;
+				}
+				const flickerFrame = Math.floor((seconds - flickerStarted) / 0.075);
+				const previousBrightness = brightness;
+				brightness = lampFlicker[flickerFrame] ?? 1;
+				for (const patch of patches) patch(amountFor);
+				if (brightness !== previousBrightness) lamp?.(amountFor);
+				lastPaint = timestamp;
 			}
-			ctx.restore();
+			frameId = requestAnimationFrame(animate);
 		}
-		if (dither) ditherCanvas(ctx, ditherStyle);
-		frames?.set(
-			phase,
-			ctx.getImageData(bounds.x, bounds.y, bounds.width, bounds.height),
-		);
-	}, [paintPlan, phase]);
+
+		const visibility =
+			patches.length > 0 || lamp
+				? new IntersectionObserver(([entry]) => {
+						if (entry?.isIntersecting) {
+							frameId ??= requestAnimationFrame(animate);
+						} else if (frameId !== undefined) {
+							cancelAnimationFrame(frameId);
+							frameId = undefined;
+							lastPaint = undefined;
+						}
+					})
+				: undefined;
+		visibility?.observe(ctx.canvas);
+		return () => {
+			visibility?.disconnect();
+			if (frameId !== undefined) cancelAnimationFrame(frameId);
+			window.clearTimeout(beaconTimer.current);
+			drawBeacon.current = undefined;
+		};
+	}, [
+		layers,
+		hidden,
+		dither,
+		ditherStyle,
+		colorEnabled,
+		theme,
+		scene,
+		motion,
+		hasTower,
+		rasterScale,
+	]);
+
+	function blinkBeacon() {
+		window.clearTimeout(beaconTimer.current);
+		if (!motion) {
+			drawBeacon.current?.(2);
+			beaconTimer.current = window.setTimeout(
+				() => drawBeacon.current?.(1),
+				600,
+			);
+			return;
+		}
+		const flashes = 2 + Number(Math.random() >= 0.5);
+		let phase = 0;
+		function next() {
+			if (phase === 2 * flashes) {
+				drawBeacon.current?.(1);
+				return;
+			}
+			const isLit = phase % 2 === 1;
+			drawBeacon.current?.(isLit ? 2 : 0);
+			phase++;
+			beaconTimer.current = window.setTimeout(next, isLit ? 250 : 200);
+		}
+		next();
+	}
 
 	return (
 		<div
 			className="workshop-scene @container relative self-start overflow-hidden"
-			onPointerMove={nudgeDust}
-			onPointerLeave={(event) => {
-				for (const patch of event.currentTarget.querySelectorAll(
-					"[data-disturbed]",
-				)) {
-					patch.removeAttribute("data-disturbed");
-				}
-			}}
+			data-color={colorEnabled}
+			onPointerMove={motion && hasDust ? stirDust : undefined}
+			onPointerLeave={hasDust ? settleDust : undefined}
+			onPointerCancel={hasDust ? settleDust : undefined}
 		>
-			<div className="h-full" role="img" aria-label={label}>
-				<canvas
-					ref={canvas}
-					width={width}
-					height={height}
-					className={`block h-full w-full ${dither ? "invert dark:invert-0" : ""}`}
+			<canvas
+				ref={canvas}
+				width={workshopWidth * rasterScale}
+				height={workshopHeight * rasterScale}
+				role="img"
+				aria-label={label}
+				className={`block h-full w-full ${colorEnabled ? "" : dither ? "invert dark:invert-0" : "grayscale"}`}
+			/>
+			{!hidden?.has("clouds") && visibleClouds?.length !== 0 && (
+				<SceneClouds clouds={visibleClouds} color={colorEnabled} />
+			)}
+			{!hidden?.has("stars") && (
+				<>
+					<NightStars stars={stars} verticalScale={stars ? 1 : 0.62} />
+					{scene === "about" && motion && <ShootingStar />}
+				</>
+			)}
+			{!hidden?.has("celestial") && (
+				<SceneCelestial
+					celestial={celestial}
+					theme={theme}
+					color={colorEnabled}
+					onToggleColor={toggleColor}
 				/>
-				{!hidden?.has("clouds") && <SceneClouds clouds={clouds} />}
-				{!hidden?.has("sky") && (
-					<SceneSky celestial={celestial} stars={stars} />
-				)}
-				{hasWind && <SceneWind />}
-				{!hidden?.has("plants") && <ScenePlants plants={plants} />}
-				{hasWind &&
-					dustPatches[scene].map(([x, y], index) => (
-						<div
-							className="workshop-dust"
-							key={x}
-							data-dust-patch
-							aria-hidden="true"
-							style={{
-								left: `${x}%`,
-								top: `${y}%`,
-								animationDelay: `${index * -2.1}s`,
-							}}
-						>
-							<span>·</span>
-							<span>:</span>
-							<span>~</span>
-							<span>′</span>
-						</div>
-					))}
-			</div>
+			)}
+			<ScenePlants
+				plants={plants.filter(({ id }) => !hidden?.has(id))}
+				color={colorEnabled}
+			/>
+			{hasDust && <DustGlyphs patches={visibleDust} />}
 			{hasTower && (
 				<button
 					type="button"

@@ -16,12 +16,11 @@ function Posts() {
 				title="Blog"
 				description="Notes on databases, systems, and what I’m learning."
 				landscape={<WorkshopScene scene="blog" />}
-				className="border-b border-(--rule) pb-4 min-[56rem]:pb-0"
 			/>
 			{posts.length === 0 ? (
 				<p className="mt-6 text-muted-foreground">Writing in progress.</p>
 			) : (
-				<ul className="mt-8 grid gap-6 sm:grid-cols-2">
+				<ul className="grid w-full max-w-[44rem] auto-rows-fr gap-4 py-4 sm:grid-cols-2">
 					{posts.map((post) => (
 						<li key={post.slug}>
 							<Link
@@ -37,14 +36,9 @@ function Posts() {
 										src={post.cover}
 									/>
 								)}
-								<div className="p-5">
+								<div className="px-4 py-3">
 									<h2 className="text-lg font-semibold group-hover:underline">
 										{post.title}
-										{post.draft && (
-											<span className="ml-2 text-xs text-muted-foreground">
-												Draft
-											</span>
-										)}
 									</h2>
 									{post.summary && (
 										<p className="mt-2 text-sm text-muted-foreground">

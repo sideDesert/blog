@@ -3,12 +3,13 @@ import { useMemo, useState } from "react";
 import blogReference from "#/assets/workshop/blog-reference.webp";
 import projectsReference from "#/assets/workshop/projects-reference.webp";
 import {
+	defaultCloudLayer,
 	sceneryLayers,
 	scenes,
 	type WorkshopLayer,
-	WorkshopScene,
 	type WorkshopSceneName,
-} from "#/components/ascii-art/workshop/WorkshopScene";
+} from "#/components/ascii-art/workshop/scenes";
+import { WorkshopScene } from "#/components/ascii-art/workshop/WorkshopScene";
 import { desertMain } from "#/components/ui/desert-layout";
 
 export const Route = createFileRoute("/workshop")({
@@ -21,19 +22,72 @@ const referenceImages: Partial<Record<WorkshopSceneName, string>> = {
 	blog: blogReference,
 };
 
+type LayerControl = { id: WorkshopLayer; label: string; group?: string };
+
 function Workshop() {
 	const [scene, setScene] = useState<WorkshopSceneName>("projects");
 	const [hiddenByScene, setHiddenByScene] = useState<
 		Partial<Record<WorkshopSceneName, ReadonlySet<WorkshopLayer>>>
 	>({});
 	const [isolatedLayer, setIsolatedLayer] = useState<WorkshopLayer>();
+	const [layerFilter, setLayerFilter] = useState("");
 	const [dither, setDither] = useState(true);
 	const [referenceOpacity, setReferenceOpacity] = useState(0);
 	const reference = referenceImages[scene];
-	const layers = useMemo(
-		() => [...sceneryLayers, ...scenes[scene].layers],
+	const layers = useMemo<LayerControl[]>(
+		() => [
+			...sceneryLayers,
+			...(scenes[scene].clouds?.map(({ id, label }) => ({
+				id,
+				label,
+				group: "Cloud wisps",
+			})) ?? [defaultCloudLayer]),
+			...scenes[scene].plants.map(({ id, label }) => ({
+				id,
+				label,
+				group: "Cacti and grasses",
+			})),
+			...scenes[scene].dust.map(({ id, label }) => ({
+				id,
+				label,
+				group: "Sand glyphs",
+			})),
+			...scenes[scene].layers,
+		],
 		[scene],
 	);
+	const { ungrouped, groups, noResults, selectedOutsideFilter } =
+		useMemo(() => {
+			const terms = layerFilter
+				.toLowerCase()
+				.trim()
+				.split(/\s+/)
+				.filter(Boolean);
+			const ungrouped: LayerControl[] = [];
+			const groups = new Map<string, LayerControl[]>();
+			let selectedOutsideFilter: LayerControl | undefined;
+			for (const layer of layers) {
+				const searchable =
+					`${layer.label} ${layer.group ?? ""} ${layer.id}`.toLowerCase();
+				if (!terms.every((term) => searchable.includes(term))) {
+					if (layer.id === isolatedLayer) selectedOutsideFilter = layer;
+					continue;
+				}
+				if (!layer.group) {
+					ungrouped.push(layer);
+					continue;
+				}
+				const group = groups.get(layer.group);
+				if (group) group.push(layer);
+				else groups.set(layer.group, [layer]);
+			}
+			return {
+				ungrouped,
+				groups: [...groups],
+				noResults: !ungrouped.length && !groups.size,
+				selectedOutsideFilter,
+			};
+		}, [layers, layerFilter, isolatedLayer]);
 	const hidden = useMemo(
 		() =>
 			isolatedLayer
@@ -50,6 +104,27 @@ function Workshop() {
 			if (!next.delete(layer)) next.add(layer);
 			return { ...previous, [scene]: next };
 		});
+	}
+
+	function layerOption({ id, label }: LayerControl) {
+		return (
+			<option key={id} value={id}>
+				{label}
+			</option>
+		);
+	}
+
+	function layerCheckbox({ id, label }: LayerControl) {
+		return (
+			<label key={id} className="flex cursor-pointer items-center gap-2">
+				<input
+					type="checkbox"
+					checked={!hidden?.has(id)}
+					onChange={() => toggle(id)}
+				/>
+				{label}
+			</label>
+		);
 	}
 
 	return (
@@ -116,6 +191,15 @@ function Workshop() {
 							/>
 						</label>
 					)}
+					<label className="block">
+						<span className="block">Filter layers</span>
+						<input
+							type="search"
+							className="mt-1 w-full border border-(--rule) bg-background px-2 py-1"
+							value={layerFilter}
+							onChange={(event) => setLayerFilter(event.currentTarget.value)}
+						/>
+					</label>
 					<label className="block border-b border-(--rule) pb-3">
 						<span className="block">Inspect a layer</span>
 						<select
@@ -127,10 +211,12 @@ function Workshop() {
 							}}
 						>
 							<option value="">All enabled layers</option>
-							{layers.map(({ id, label }) => (
-								<option key={id} value={id}>
-									{label}
-								</option>
+							{selectedOutsideFilter && layerOption(selectedOutsideFilter)}
+							{ungrouped.map(layerOption)}
+							{groups.map(([name, members]) => (
+								<optgroup key={name} label={name}>
+									{members.map(layerOption)}
+								</optgroup>
 							))}
 						</select>
 					</label>
@@ -138,18 +224,15 @@ function Workshop() {
 						disabled={isolatedLayer !== undefined}
 						className="space-y-2 disabled:opacity-50"
 					>
-						{layers.map(({ id, label }) => (
-							<label
-								key={id}
-								className="flex cursor-pointer items-center gap-2"
-							>
-								<input
-									type="checkbox"
-									checked={!hidden?.has(id)}
-									onChange={() => toggle(id)}
-								/>
-								{label}
-							</label>
+						{noResults && <p role="status">No layers match.</p>}
+						{ungrouped.map(layerCheckbox)}
+						{groups.map(([name, members]) => (
+							<details key={name} open={layerFilter.trim() ? true : undefined}>
+								<summary className="cursor-pointer">{name}</summary>
+								<div className="mt-2 space-y-2 pl-4">
+									{members.map(layerCheckbox)}
+								</div>
+							</details>
 						))}
 					</fieldset>
 					<label className="flex cursor-pointer items-center gap-2 border-t border-(--rule) pt-3">

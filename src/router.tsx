@@ -5,6 +5,12 @@ export function getRouter() {
   const router = createTanStackRouter({
     routeTree,
     scrollRestoration: true,
+    defaultViewTransition: {
+      types: ({ pathChanged }) =>
+        pathChanged && !matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? ['page-navigation']
+          : false,
+    },
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
   })

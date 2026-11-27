@@ -1,113 +1,54 @@
-import type { Plant } from "./SceneScenery";
-import { drawDesertTufts, drawRock } from "./WorkshopProps";
+import { fill, fillTerrainContours, stroke } from "./canvasShapes";
+import { cliffFaces } from "./cliffFaces";
+import { rockLayer } from "./DesertDetails";
+import { lookoutDither, lookoutLayers } from "./FieldNotesLookout";
+import {
+	notebookDither,
+	notebookLayers,
+	pencilDither,
+} from "./FieldNotesNotebook";
+import {
+	fieldNotesVegetationLayers,
+	ledgeScrubLayer,
+} from "./FieldNotesPlants";
+import {
+	drawStratifiedBoulder,
+	eastFieldBoulder,
+	eastFieldFragment,
+	middleFieldBoulder,
+	westFieldBoulder,
+	westFieldFragment,
+} from "./foregroundBoulders";
+import { ledgeFaces } from "./ledgeFaces";
+import { lookoutFaces } from "./lookoutFaces";
+import { valleyContours } from "./valleyContours";
 
-function fill(
-	ctx: CanvasRenderingContext2D,
-	shape: string,
-	ink: string | CanvasGradient,
-) {
-	ctx.fillStyle = ink;
-	ctx.fill(new Path2D(shape));
-}
+const escarpmentSkyline =
+	"M0 140 21 133 53 131 85 129 111 125 132 125 138 128 142 134 145 154 164 155 176 158 180 160 184 171 197 172 216 171 238 169 249 167 267 168 282 169 294 173 299 192 305 195 314 205 324 215 339 221 373 223 393 228 411 221 440 216 483 214 520 227 577 227 614 235 649 233 701 239 738 234 771 244 807 243 846 229 877 232 922 225 959 235 1000 230V327H0Z";
 
-function stroke(
-	ctx: CanvasRenderingContext2D,
-	shape: string,
-	ink: string,
-	width = 1,
-) {
-	ctx.strokeStyle = ink;
-	ctx.lineWidth = width;
-	ctx.stroke(new Path2D(shape));
+function drawDistantCliffBench(ctx: CanvasRenderingContext2D) {
+	ctx.clip(
+		new Path2D(
+			"M333 211l10-6 22-3 13-3 25-2 15 1 20 4 8 5 7 7 17 2 15 10v12H333Z",
+		),
+	);
+	const stone = ctx.createLinearGradient(0, 196, 0, 238);
+	stone.addColorStop(0, "#2c271f");
+	stone.addColorStop(0.63, "#24201b");
+	stone.addColorStop(1, "#18161300");
+	ctx.fillStyle = stone;
+	ctx.fillRect(333, 196, 152, 42);
+	fillTerrainContours(ctx, cliffFaces);
 }
 
 function drawEscarpment(ctx: CanvasRenderingContext2D) {
-	const skyline = new Path2D(
-		"M0 140 21 133 53 131 85 129 111 125 132 126 138 130 144 155 164 156 174 159 181 180 218 179 240 176 275 173 285 176 292 198 305 197 314 208 339 222 373 223 393 228 411 221 440 216 483 214 520 227 577 227 614 235 649 233 701 239 738 234 771 244 807 243 846 229 877 232 922 225 959 235 1000 230V327H0Z",
-	);
 	const wash = ctx.createLinearGradient(0, 129, 0, 325);
 	wash.addColorStop(0, "#302921");
 	wash.addColorStop(0.55, "#25211b");
 	wash.addColorStop(1, "#151514");
 	ctx.fillStyle = wash;
-	ctx.fill(skyline);
+	ctx.fill(new Path2D(escarpmentSkyline));
 
-	ctx.save();
-	ctx.clip(skyline);
-	const rimLight = ctx.createLinearGradient(0, 0, 325, 0);
-	rimLight.addColorStop(0, "#413a32");
-	rimLight.addColorStop(0.27, "#51473b");
-	rimLight.addColorStop(0.4, "#6d6050");
-	rimLight.addColorStop(0.51, "#4b4237");
-	rimLight.addColorStop(0.79, "#494034");
-	rimLight.addColorStop(0.98, "#554a3e");
-	fill(
-		ctx,
-		"M0 139 27 134 91 129 111 125 138 128 144 157 173 158 179 180 159 175 141 167 132 137 114 132 50 136 9 142ZM181 180l64-5 30-2 10 3 12 14 23 18-16-4-27-23-27-1-37 4-31 0Z",
-		rimLight,
-	);
-	fill(
-		ctx,
-		"M23 138l13-1-2 26-8 10Zm40-4 12-1-2 32-8 8Zm29-2 13-2-1 33-8 7Zm54 27 14 1 7 21-10-4Zm75 24 15-1 4 21-16-1Zm33-2 15-2 5 22-14-1Z",
-		"#211d19",
-	);
-	const stratum = ctx.createLinearGradient(0, 169, 0, 264);
-	stratum.addColorStop(0, "#43382d");
-	stratum.addColorStop(0.52, "#4e4337");
-	stratum.addColorStop(1, "#29231d00");
-	fill(
-		ctx,
-		"M0 164q47-7 111 7 19 7 38 14 34 22 76 30 54 13 107 15l-10 8-43-5-50-10-53-14-42-20-31-10Q54 168 0 171ZM22 195q74-13 118 9 33 12 58 26l-24-4-34-13q-49-25-118-12Z",
-		stratum,
-	);
-	fill(
-		ctx,
-		`M63 182q47-7 69 12l34 12 22 11 25 4 18 6-19 0-34-6-35-14-29-15-45-5Z
-		M119 172l22 14 22 17 28 7 35 11 23 3 10 8-17-3-32-6-29-8-27-11-21-19Z
-		M194 224l58 5 24 7 28 6 27 11 29 6-37 1-21-11-32-9-21-6-55-6Z
-		M289 209l18 7 27 7 35 7 16 7-25-3-41-7-27-9Z`,
-		"#6657447a",
-	);
-	const fissures = [
-		[13, 140, 17],
-		[34, 137, 24],
-		[49, 134, 30],
-		[58, 134, 19],
-		[79, 132, 28],
-		[108, 128, 39],
-		[115, 128, 41],
-		[123, 127, 48],
-		[133, 128, 45],
-		[142, 138, 42],
-		[152, 158, 27],
-		[169, 159, 31],
-		[195, 181, 21],
-		[212, 181, 27],
-		[236, 178, 31],
-		[261, 176, 28],
-		[278, 175, 37],
-		[286, 179, 32],
-		[300, 192, 19],
-	];
-	for (const [index, [x, y, depth]] of fissures.entries()) {
-		const drift = x < 125 ? 1 : 7;
-		const width = 2 + (index % 4);
-		const stone = ctx.createLinearGradient(0, y, 0, y + depth);
-		stone.addColorStop(0, x < 105 ? "#716253" : "#9a886e");
-		stone.addColorStop(0.64, x < 105 ? "#504537" : "#6d5d4b");
-		stone.addColorStop(1, "#4a3d2e45");
-		fill(
-			ctx,
-			`M${x} ${y}l-${width + 4} 3 ${drift} ${depth - 3} ${width + 7} 3Z`,
-			"#191611",
-		);
-		fill(
-			ctx,
-			`M${x} ${y}l${width} 1q-1 ${depth * 0.6} ${drift} ${depth}l-${width + 1} -3Z`,
-			stone,
-		);
-	}
-	ctx.restore();
 	fill(
 		ctx,
 		"M0 275q125-22 220-2t212 22q75-37 161-27 37-21 84-27l79-3 43-13 20-10 37 1 47 32 97 3v125H0Z",
@@ -124,38 +65,109 @@ function drawEscarpment(ctx: CanvasRenderingContext2D) {
 	);
 }
 
+function drawCliffFaces(ctx: CanvasRenderingContext2D) {
+	ctx.clip(new Path2D(escarpmentSkyline));
+	fillTerrainContours(ctx, cliffFaces);
+}
+
+function drawCliffShadows(ctx: CanvasRenderingContext2D) {
+	ctx.clip(new Path2D(escarpmentSkyline));
+	const stone = ctx.createLinearGradient(0, 127, 0, 263);
+	stone.addColorStop(0, "#231f1b");
+	stone.addColorStop(0.54, "#1d1916");
+	stone.addColorStop(0.8, "#201b17a8");
+	stone.addColorStop(1, "#201b1700");
+	ctx.fillStyle = stone;
+	ctx.fillRect(0, 120, 470, 143);
+}
+
+const cliffReliefLayers = (
+	[
+		[
+			"west-cliff-crown",
+			"Lit cap of the west cliff",
+			123,
+			147,
+			"#87745b50",
+			"#69574418",
+			`M13 134l23-2 34-4 27-2 19-2 12 3-12 4-21 1-20 2-18 3-22 1-18 3Z
+			M29 140l30-4 30-3 26-2-9 5-23 3-26 1-20 2Z`,
+		],
+		[
+			"west-cliff-flutes",
+			"Weathered ribs in the west cliff",
+			137,
+			188,
+			"#7968534c",
+			"#57473620",
+			`M62 139l6 0-1 15 1 8-5 7-4-1 3-11Z
+			M91 138l4-2 2 17 2 8-5 12-3-3 2-9-1-12Z
+			M104 135l4-2 3 20 4 13 4 7-5 3-6-14-2-12Z
+			M123 134l4-2 3 17 4 8 1 12 8 11-5 2-7-12-1-11-4-8Z
+			M149 156l5-2 3 14 3 10 6 8-6 1-6-9-2-10Z
+			M167 156l6 1 4 15 5 11-6-3-5-13Z`,
+		],
+		[
+			"western-bench-crown",
+			"Cap of the next sandstone bench",
+			166,
+			213,
+			"#88775f50",
+			"#66524021",
+			`M185 175l28-3 25-3 19-2 18 1 15 4 7 10-9-3-7-4-17-2-23 1-24 2-23 2Z
+			M226 177l5-1 1 12-3 6-3-4Z
+			M280 177l6 0 5 13 6 5 10 10-5 2-10-9-5-8Z`,
+		],
+		[
+			"west-cliff-talus",
+			"Glancing light across the fallen slope",
+			190,
+			277,
+			"#76624a4a",
+			"#64523e2d",
+			`M70 185q22 4 39 10l23 3 26 9 33 8 40 2-12 4-31-1-37-9-27-7-26-4-23-10Z
+			M87 272q25-14 52-20 20-3 42-1l30 5-18 1-18-2-29 1-26 8-22 10Z
+			M212 260l28-5 23 1 21 6 33 3-11 4-27-3-17-5-22-2-20 4Z`,
+		],
+	] as const
+).map(([id, label, top, bottom, light, shade, face]) => ({
+	id,
+	label,
+	group: "Western cliff relief",
+	draw(ctx: CanvasRenderingContext2D) {
+		ctx.clip(new Path2D(escarpmentSkyline));
+		const stone = ctx.createLinearGradient(0, top, 0, bottom);
+		stone.addColorStop(0, light);
+		stone.addColorStop(1, shade);
+		ctx.filter = "blur(0.8px)";
+		fill(ctx, face, stone);
+	},
+}));
+
 function drawValleyFolds(ctx: CanvasRenderingContext2D) {
-	ctx.filter = "blur(3px)";
-	const sand = ctx.createLinearGradient(0, 258, 0, 390);
-	sand.addColorStop(0, "#4d4236");
-	sand.addColorStop(0.45, "#524438");
-	sand.addColorStop(1, "#2c251f00");
-	fill(
+	fillTerrainContours(ctx, valleyContours);
+}
+
+function drawValleyRill(ctx: CanvasRenderingContext2D) {
+	const shadow = ctx.createLinearGradient(253, 355, 464, 307);
+	shadow.addColorStop(0, "#17131000");
+	shadow.addColorStop(0.26, "#17131084");
+	shadow.addColorStop(0.67, "#16131094");
+	shadow.addColorStop(1, "#16131000");
+	ctx.filter = "blur(2px)";
+	stroke(ctx, "M245 357C284 358 308 346 338 339S382 312 424 313", shadow, 8);
+
+	const sunlitSand = ctx.createLinearGradient(253, 355, 437, 308);
+	sunlitSand.addColorStop(0, "#67574300");
+	sunlitSand.addColorStop(0.15, "#69594567");
+	sunlitSand.addColorStop(0.55, "#75634e95");
+	sunlitSand.addColorStop(0.76, "#79665085");
+	sunlitSand.addColorStop(1, "#69594500");
+	stroke(
 		ctx,
-		`
-		M30 292q36-8 71-27t72-19q23 5 47 0-20 10-46 6-44-1-65 19-36 19-79 26Z
-		M258 356q44-10 70-29 30-22 67-23 44 5 82-20-27 25-80 28-35 3-61 21-36 20-78 26Z
-		M505 296q38-13 78-10 34 4 69-12 29-12 61-19l-18 12-27 9q-54 24-90 18-38-1-73 6Z
-	`,
-		sand,
-	);
-	fill(
-		ctx,
-		`
-		M42 297q53-13 102-40-38 36-92 45Z
-		M238 354q62-6 104-31-32 27-67 33Z
-		M431 311q52-13 95-37-22 18-44 27l-52 16Z
-	`,
-		"#28211c",
-	);
-	fill(
-		ctx,
-		`
-		M36 354q67-11 116-4t122-11q-58 17-112 16t-126 4Z
-		M234 372q85-20 154-14t123-15q-39 22-128 22-78-1-149 11Z
-		M444 337q50-17 87-15t102-19q-51 22-96 25-43 0-92 12Z
-	`,
-		"#51443661",
+		"M255 349C282 352 306 338 333 333S373 313 400 309Q415 306 432 309",
+		sunlitSand,
+		6.2,
 	);
 }
 
@@ -189,39 +201,16 @@ function drawValleyRidge(ctx: CanvasRenderingContext2D) {
 	);
 }
 
+const lookoutRiseOutline =
+	"M609 294q63-14 101-27l32-12 24-19 19-9 15-2 19-10 31-2 15 5 21-2 26 10 20 15 28 8 26 21-39 32-113 10-114-4-83 25Z";
+
 function drawLookoutRise(ctx: CanvasRenderingContext2D) {
 	const shade = ctx.createLinearGradient(818, 223, 849, 326);
-	shade.addColorStop(0, "#493e34");
-	shade.addColorStop(0.45, "#2b2621");
+	shade.addColorStop(0, "#2d271f");
+	shade.addColorStop(0.45, "#27221d");
 	shade.addColorStop(1, "#201c1800");
-	fill(
-		ctx,
-		"M609 294q63-14 101-27l32-12 24-19 19-9 15-2 19-10 31-2 15 5 21-2 26 10 20 15 28 8 26 21-39 32-113 10-114-4-83 25Z",
-		shade,
-	);
-	const juttingStone = ctx.createLinearGradient(0, 218, 0, 292);
-	juttingStone.addColorStop(0, "#756758");
-	juttingStone.addColorStop(0.6, "#594b3e");
-	juttingStone.addColorStop(1, "#42372c60");
-	fill(
-		ctx,
-		`M616 294q48-17 95-25l16-7 17-6-16 11-45 13-38 10Z
-		M682 272l12-8 18-2 8-7 17-2-15 8-17 4-15 8Z
-		M731 256l16-13 10-3 8-11 15-2 11-5-13 10-11 3-11 13Z
-		M764 252l10-10 13-5 9-13 17-4-6 8-9 4-8 13Z
-		M786 255l14-11 11-20 16-7 11 2-15 8-7 12-9 8Z
-		M813 271l11-15 10-19 16-10-6 9-6 16-14 14Z
-		M828 231l18-9 13 0 11 3 13-7 10 1-12 5-10 5-14-2-13 3Z`,
-		juttingStone,
-	);
-	fill(
-		ctx,
-		`M782 245l16-13-5 13-10 9-27 7Z
-		M811 249l14-21 14-4-10 8-10 19-24 8Z
-		M848 238l16-5 25-7 14 7-28 6-13 19-30 13 12-14Z
-		M863 276l29-18 17-17 22 6-20 4-14 18-23 9Z`,
-		"#1d1916b0",
-	);
+	fill(ctx, lookoutRiseOutline, shade);
+	fillTerrainContours(ctx, lookoutFaces);
 	fill(
 		ctx,
 		`M610 298q39-13 80-15l28-9-7 6-23 6-40 5-38 11Z
@@ -230,82 +219,197 @@ function drawLookoutRise(ctx: CanvasRenderingContext2D) {
 		M789 280q26-13 52-12l48 6-19 0-33-3-32 5Z`,
 		"#51473a84",
 	);
-	for (const [x, y, size] of [
-		[688, 268, 0.22],
-		[704, 261, 0.22],
-		[724, 252, 0.26],
-		[737, 245, 0.27],
-		[764, 231, 0.3],
-	]) {
-		drawRock(ctx, "boulder", x, y, size);
-	}
+}
+
+const lookoutSlopeLayers = (
+	[
+		[
+			"lookout-west-ribs",
+			"Sandstone ribs below the lookout",
+			218,
+			275,
+			"#806c537b",
+			"#66543f16",
+			`M819 217l13-3-5 12-7 7-14 4-10 12-8 2 7-17 15-9Z
+			M796 225l12-4-4 9-12 8-5 11-11 11-17 8-6-2 17-14 6-15Z
+			M778 230l12-2-6 8-12 10-12 9-18 5 16-11 9-11Z
+			M832 225l15-4-6 12-13 13-15 9-13 3 13-12 9-11Z`,
+		],
+		[
+			"lookout-lower-benches",
+			"Low rock shelves beside the trail",
+			252,
+			287,
+			"#76624967",
+			"#68533d26",
+			`M669 278q28-6 52-18l14-4-5 6-16 9-34 9-19 3Z
+			M706 276q27-9 45-14l28-12-6 7-19 12-28 7-22 7Z
+			M747 275q20-10 39-12l42-11-15 6-28 10-26 5-14 8Z
+			M828 268l28-6 22 2 14 7-12-3-24-1-23 4Z`,
+		],
+		[
+			"lookout-east-runoff",
+			"Runoff below the east side of the lookout",
+			271,
+			317,
+			"#65574050",
+			"#4c3e2c0e",
+			`M870 273q37 0 62 13l40-3-14 6-26 2-25-10-30-4Z
+			M849 287l40-3 45 9-20 2-25-4-35 1Z
+			M800 306q33-5 60-4l27-5-11 7-32 3-33 2Z`,
+		],
+	] as const
+).map(([id, label, top, bottom, lit, shade, contour]) => ({
+	id,
+	label,
+	group: "Lookout slope",
+	draw(ctx: CanvasRenderingContext2D) {
+		ctx.clip(new Path2D(lookoutRiseOutline));
+		ctx.filter = "blur(0.95px)";
+		const stone = ctx.createLinearGradient(0, top, 0, bottom);
+		stone.addColorStop(0, lit);
+		stone.addColorStop(1, shade);
+		fill(ctx, contour, stone);
+	},
+}));
+
+const upperTrail = `M760 272C755 274 748 275 750 278
+	C752 282 761 284 768 288C776 292 778 296 769 300
+	C759 304 743 307 721 313C702 318 683 323 684 329`;
+const lowerTrail = "C684 333 694 333 694 339C693 348 670 352 644 359";
+
+const lookoutSlopeRocks = [
+	rockLayer("lookout-bank-chip", "Chip low on the lookout bank", [
+		"slab",
+		640,
+		287,
+		0.23,
+	]),
+	rockLayer("lookout-bank-stone", "Stone on the lower lookout bank", [
+		"angular",
+		666,
+		276,
+		0.28,
+	]),
+	rockLayer("lookout-west-fragment", "West lookout slope fragment", [
+		"boulder",
+		692,
+		265,
+		0.3,
+	]),
+	rockLayer("lookout-mid-fragment", "Middle lookout slope fragment", [
+		"angular",
+		715,
+		260,
+		0.31,
+	]),
+	rockLayer("lookout-shelf-stone", "Stone on the middle lookout shelf", [
+		"slab",
+		730,
+		254,
+		0.3,
+	]),
+	rockLayer("lookout-upper-fragment", "Upper lookout slope fragment", [
+		"angular",
+		744,
+		249,
+		0.39,
+	]),
+	rockLayer("lookout-rim-chip", "Chip at the lookout rim", [
+		"slab",
+		760,
+		247,
+		0.31,
+	]),
+	rockLayer("lookout-rim-stone", "Stone at the upper lookout rim", [
+		"boulder",
+		786,
+		235,
+		0.32,
+	]),
+].map((layer) => ({
+	...layer,
+	group: "Lookout slope rocks",
+	draw(ctx: CanvasRenderingContext2D) {
+		ctx.globalAlpha = 0.72;
+		layer.draw(ctx);
+	},
+}));
+
+function drawTrailShoulders(ctx: CanvasRenderingContext2D) {
+	ctx.filter = "blur(2.5px)";
+	ctx.lineCap = "round";
+	const wornSand = ctx.createLinearGradient(0, 270, 0, 368);
+	wornSand.addColorStop(0, "#6e5d4a00");
+	wornSand.addColorStop(0.28, "#6e5d4a55");
+	wornSand.addColorStop(0.68, "#7b69547a");
+	wornSand.addColorStop(1, "#52443800");
+	stroke(ctx, `${upperTrail}${lowerTrail}`, wornSand, 12);
 }
 
 function drawTrail(ctx: CanvasRenderingContext2D) {
-	const sand = ctx.createLinearGradient(0, 272, 0, 367);
-	sand.addColorStop(0, "#554a3e");
-	sand.addColorStop(0.35, "#655849");
-	sand.addColorStop(0.77, "#5b4e40");
-	sand.addColorStop(1, "#574a3900");
-	fill(
-		ctx,
-		"M654 360c10-11 27-16 32-23 5-5-13-6-11-14 4-10 41-18 57-23 19-6 44-11 41-18-2-5-24-8-24-11 1-3 9-5 24-7-13 5-19 6-18 8 3 2 26 5 27 11 1 10-32 16-52 22-17 5-44 13-43 19 1 4 14 8 13 13-1 5-22 15-30 24Z",
-		sand,
-	);
-	fill(
-		ctx,
-		"M667 358q12-10 24-17 7-5 0-9l-8-4 8 1q17 5 5 12-16 12-29 17Zm41-46 25-9 25-7q-13 8-50 16Z",
-		"#41362b",
-	);
+	const sand = ctx.createLinearGradient(0, 267, 0, 361);
+	sand.addColorStop(0, "#61514200");
+	sand.addColorStop(0.16, "#74634fd2");
+	sand.addColorStop(0.47, "#695a46bf");
+	sand.addColorStop(0.72, "#786752bd");
+	sand.addColorStop(1, "#53453812");
+	ctx.lineCap = "round";
+	ctx.filter = "blur(0.8px)";
+	stroke(ctx, upperTrail, sand, 4.2);
+	stroke(ctx, `M684 329${lowerTrail}`, sand, 7.6);
 }
 
-function drawLookout(ctx: CanvasRenderingContext2D) {
-	fill(ctx, "M805 227l10-8 11 2 5-3 24 1 13 5 5 6-15 4-31-3-15 3Z", "#42382e");
-	fill(ctx, "M820 204l7-4 25-1 7 4-18 2Z", "#8d7d6b");
-	fill(ctx, "M820 204l21-2v19l-21 3Z", "#6b5b4b");
-	fill(ctx, "M841 202l18 1v19l-18-1Z", "#302921");
-	fill(ctx, "M826 207l8-1v7l-8 1Z", "#141211");
-	fill(ctx, "M825 206l10-1v2l-10 1Zm0 8 10-1v2l-10 1Z", "#9d8e79");
-	fill(
-		ctx,
-		"M814 221l7-2v3l-6 4-8 2Zm7 2 9-4 10 1-6 3-13 3Zm23 1 12-2 7 3-18 2Z",
-		"#7c6d5a",
-	);
-	stroke(
-		ctx,
-		"M821 206l3-1m12 0 5-1m-21 12 5-1m10 3 6-1m1-12 15 1m-14 5 13 1m-12 5 10 1",
-		"#6f6252",
-		0.75,
-	);
-}
+const ledgeRim = `L489 408 502 402 520 397 535 392 570 383 584 382
+	606 369 625 364 648 358 682 355 711 353 732 350 751 349 773 344
+	802 340 831 341 853 343 880 342 906 344 926 349 944 355 971 366 996 380 1008 401`;
+const ledgeOutline = `M438 495Q451 453 474 421${ledgeRim}
+	l-12 25-34 28-52 26-82 20H438Z`;
 
-function drawLedge(ctx: CanvasRenderingContext2D) {
-	const ledge = new Path2D(
-		"M438 495q13-42 37-74l20-13 25-8 12-7 47-13 24-14 38-8 51-3 35-5 43 0 31-9 45 1 33 1 37 5 21 12 32 7 27 13 12 21-12 25-34 28-52 26-82 20H438Z",
-	);
+function drawLedgeBase(ctx: CanvasRenderingContext2D) {
 	const stone = ctx.createLinearGradient(0, 355, 25, 501);
 	stone.addColorStop(0, "#3a312a");
 	stone.addColorStop(0.59, "#302820");
 	stone.addColorStop(1, "#151311");
-	ctx.fillStyle = stone;
-	ctx.fill(ledge);
-	ctx.save();
-	ctx.clip(ledge);
+	fill(ctx, ledgeOutline, stone);
+}
 
+function drawLedgeTop(ctx: CanvasRenderingContext2D) {
+	ctx.clip(new Path2D(ledgeOutline));
 	const top = ctx.createLinearGradient(684, 346, 710, 480);
-	top.addColorStop(0, "#706253");
-	top.addColorStop(0.45, "#50453a");
-	top.addColorStop(0.79, "#42382e");
+	top.addColorStop(0, "#443b32");
+	top.addColorStop(0.45, "#373028");
+	top.addColorStop(0.79, "#302922");
 	top.addColorStop(1, "#2d261f");
-	fill(
-		ctx,
-		`M470 425l20-17 30-8 12-7 47-13 24-14 38-8 51-3 35-5 43 0 31-9 45 1 33 1 37 5 21 12 32 7 27 13 12 21-22 23-40 19-56 15-53 16-66 11-51-3-19-6-42-1-16-9-34-9-37 2-24-8-20 1-31-13-14 4-23-7Z`,
-		top,
+	const surface = new Path2D(
+		`M474 421${ledgeRim}
+		l-22 23-40 19-56 15-53 16-66 11-51-3-19-6-42-1-16-9-34-9-37 2-24-8-20 1-31-13-14 4-23-7Z`,
 	);
+	ctx.fillStyle = top;
+	ctx.fill(surface);
+	ctx.clip(surface);
 
+	for (const [x, y, width, height] of [
+		[735, 455, 150, 23],
+		[931, 393, 61, 36],
+	]) {
+		ctx.save();
+		ctx.translate(x, y);
+		ctx.scale(width, height);
+		const light = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+		light.addColorStop(0, "#72625270");
+		light.addColorStop(1, "#72625200");
+		ctx.fillStyle = light;
+		ctx.fillRect(-1, -1, 2, 2);
+		ctx.restore();
+	}
+}
+
+function drawLedgeFaces(ctx: CanvasRenderingContext2D) {
+	ctx.clip(new Path2D(ledgeOutline));
 	const face = ctx.createLinearGradient(525, 401, 542, 495);
-	face.addColorStop(0, "#655748");
-	face.addColorStop(0.47, "#4c4137");
+	face.addColorStop(0, "#4d4136");
+	face.addColorStop(0.47, "#382f28");
 	face.addColorStop(1, "#211a1500");
 	fill(
 		ctx,
@@ -323,347 +427,193 @@ function drawLedge(ctx: CanvasRenderingContext2D) {
 		M756 480l-25 7-29 0-14 13h-18l24-19 28-7Z`,
 		"#1f191590",
 	);
+}
 
+function drawLedgeWeathering(ctx: CanvasRenderingContext2D) {
+	ctx.clip(new Path2D(ledgeOutline));
+	fillTerrainContours(ctx, ledgeFaces);
+}
+
+function drawLedgeCrown(ctx: CanvasRenderingContext2D) {
+	ctx.clip(new Path2D(ledgeOutline));
+	ctx.filter = "blur(0.95px)";
+	const sandstone = ctx.createLinearGradient(0, 340, 0, 391);
+	sandstone.addColorStop(0, "#9e887162");
+	sandstone.addColorStop(0.48, "#7b685571");
+	sandstone.addColorStop(1, "#51433700");
 	fill(
 		ctx,
-		`M483 419q39-20 69-24l25-9-10 8-48 12-21 12Z
-		M552 397l30-19 45-16 42-6 32 1-35 5-42 10-28 14-29 11Z
-		M741 356l36-6 29-9 43 2 25 4-34-1-30 1-32 9Z
-		M869 451q40-5 85-28l31-17-14 13-41 23-33 10Z`,
-		"#8a786367",
+		`M644 359q27-5 59-5l33-6 21 0 23-8 37-1 23 3-22 1-22 6-19 8-33 5-34 2-32 3-20-1Z
+		M858 343l20-2 29 2 23 6 17 6 23 5 23 14-24-8-28-5-20-7-19-3-16-1-22-1Z`,
+		sandstone,
+	);
+}
+
+function drawForegroundWashes(ctx: CanvasRenderingContext2D) {
+	ctx.filter = "blur(2px)";
+	const sand = ctx.createLinearGradient(0, 347, 0, 438);
+	sand.addColorStop(0, "#53473828");
+	sand.addColorStop(0.49, "#69584757");
+	sand.addColorStop(0.8, "#5045373a");
+	sand.addColorStop(1, "#4a3c2e00");
+	fill(
+		ctx,
+		`M0 351q58-7 114-2l24 5-28-1q-60-3-110 2Z
+		M133 363q60-9 114-3 26 3 57-2l-14 5q-26 5-45 2-52-5-112 1Z
+		M14 370q37-6 80-1l56 4-8 2-53-2q-38-4-75 0Z
+		M201 382q54-8 109-1l42-6-14 5-31 5q-58-6-102 1Z
+		M0 384q47-4 85 3l20 3-20 0q-45-5-85-2Z
+		M20 397q49-7 107 2 44 7 94-1l-11 4q-45 8-88 1-52-8-102-2Z
+		M229 405q42-11 87-5 39 4 75-6l-12 6q-35 10-68 5-47-6-82 4Z
+		M386 391q40-4 77-13 28-5 64 1l-11 3q-30-4-53 1-36 10-77 11Z
+		M336 426q38-4 80-1l27-4-7 4q-24 7-45 4-27-4-55 0Z`,
+		sand,
 	);
 	fill(
 		ctx,
-		`M571 412l44-19 35-3 34-10-14 8-28 9-23 0-37 14Z
-		M597 440q38-12 88-10l28 10-31-5-37 1-25 7Z
-		M728 474q26-4 68-7l53-10-18 7-41 8-37 4Z
-		M895 372q49 6 74 26l-20-8-26-12Z`,
-		"#2f251e8f",
-	);
-	ctx.restore();
-}
-
-function drawNotebookShadow(ctx: CanvasRenderingContext2D) {
-	const contactShadow = ctx.createLinearGradient(747, 412, 747, 463);
-	contactShadow.addColorStop(0, "#151311e0");
-	contactShadow.addColorStop(0.66, "#1a161380");
-	contactShadow.addColorStop(1, "#1a161300");
-	ctx.fillStyle = contactShadow;
-	ctx.fill(
-		new Path2D("M638 434q52-25 114-14l99 17-14 20q-51-5-90-15-48 9-109 2Z"),
+		`M11 376q58-5 94 2l47 2-34 3-34-3q-37-3-73 1Z
+		M153 407l43 3 33-5-11 6-31 4-34-4Z
+		M339 393q31 3 60-2l34-7-12 5-25 7-39 2Z`,
+		"#17131088",
 	);
 }
 
-const leftPage = "M649 419l50-60q59-10 82 7-16 35-37 66-44-15-95-13Z";
-const rightPage = "M744 432q21-29 37-66 39-4 76 10l-30 66q-60-17-83-10Z";
+const fieldRockLayers = [
+	rockLayer("field-west-cluster", "Cluster at the west edge", [
+		"cluster",
+		7,
+		466,
+		0.72,
+	]),
+	{
+		id: "field-west-slab",
+		label: "Slab below the west boulder",
+		group: "Small rocks",
+		draw: (ctx: CanvasRenderingContext2D) =>
+			drawStratifiedBoulder(ctx, westFieldFragment),
+	},
+	{
+		id: "field-ledge-slab",
+		label: "Slab at the foot of the ledge",
+		group: "Small rocks",
+		draw: (ctx: CanvasRenderingContext2D) =>
+			drawStratifiedBoulder(ctx, eastFieldFragment),
+	},
+	rockLayer("field-valley-slab", "Slab on the valley floor", [
+		"slab",
+		231,
+		398,
+		0.39,
+	]),
+	rockLayer("field-trail-cluster", "Cluster below the trail", [
+		"cluster",
+		499,
+		366,
+		0.32,
+	]),
+	rockLayer("field-east-boulder", "Boulder above the ledge", [
+		"boulder",
+		934,
+		360,
+		0.57,
+	]),
+] as const;
 
-function drawNotebook(ctx: CanvasRenderingContext2D) {
-	const cover =
-		"M640 429l59-69q49-11 83 7 37-6 79 10l-29 78q-46 1-87-15-43-9-105-7Z";
-	fill(ctx, cover, "#2b251f");
-
-	for (const [path, start, end, stops] of [
-		[
-			leftPage,
-			659,
-			762,
-			[
-				[0, "#9e907b"],
-				[0.63, "#9e8e79"],
-				[0.83, "#80705b"],
-				[1, "#463a30"],
-			],
-		],
-		[
-			rightPage,
-			750,
-			854,
-			[
-				[0, "#716350"],
-				[0.3, "#978774"],
-				[0.78, "#8d7e6c"],
-				[1, "#827561"],
-			],
-		],
-	] as const) {
-		const shade = ctx.createLinearGradient(start, 372, end, 412);
-		for (const [offset, color] of stops) shade.addColorStop(offset, color);
-		fill(ctx, path, shade);
-		ctx.save();
-		ctx.clip(new Path2D(path));
-		for (let index = 0; index < 240; index++) {
-			const grainX = 645 + ((index * 83) % 216);
-			const grainY = 356 + ((index * 37) % 94);
-			ctx.fillStyle = index % 3 ? "#b3a18b75" : "#382e244b";
-			ctx.fillRect(grainX, grainY, 1 + (index % 2), 0.55);
-		}
-		ctx.restore();
-	}
-}
-
-function drawPageEdges(ctx: CanvasRenderingContext2D) {
-	fill(
-		ctx,
-		"M649 419q52-2 95 13 23-7 83 10l-3 10q-57-14-80-12-53-14-103-9Z",
-		"#5b4e3f",
+export function fieldNotesDither(visibleLayers: readonly string[]) {
+	const paperVisible = visibleLayers.some(
+		(id) =>
+			(id.startsWith("notebook-") && id !== "notebook-shadow") ||
+			id === "pages",
 	);
-	stroke(
-		ctx,
-		"M646 425q52-6 98 9 32-4 81 11m-182-17q53-5 101 9 32-3 80 11",
-		"#998670",
-		1,
+	const pencilVisible = visibleLayers.some(
+		(id) => id.startsWith("pencil-") && id !== "pencil-shadow",
 	);
-	stroke(ctx, "M641 431q55-4 103 10 30-1 81 12", "#8a7660", 1.2);
-	fill(ctx, "M781 366l2.8 0q-14 36-37 66l-3-1q21-29 37.2-65Z", "#493d30");
-	fill(ctx, "M827 442l30-66 4 1-33 73Z", "#544836");
+	const lookoutVisible = visibleLayers.some((id) => id.startsWith("lookout"));
+	return [
+		...(paperVisible ? [notebookDither] : []),
+		...(pencilVisible ? [pencilDither] : []),
+		...(lookoutVisible ? [lookoutDither] : []),
+	];
 }
-
-function drawHandwrittenNotes(ctx: CanvasRenderingContext2D) {
-	ctx.clip(new Path2D(`${leftPage} ${rightPage}`));
-	ctx.setLineDash([2, 1.7, 0.7, 0.9, 2.5, 2.1]);
-	for (let row = 0; row < 7; row++) {
-		const x = 686 - row * 4.1;
-		const y = 387 + row * 4.3;
-		ctx.lineDashOffset = row * 2.3;
-		stroke(ctx, `M${x} ${y}q29-4 ${52 + (row % 3) * 6} 6`, "#514337", 1.05);
-	}
-	for (let row = 0; row < 6; row++) {
-		const x = 765 - row * 2.6;
-		const y = 404 + row * 4.2;
-		ctx.lineDashOffset = row * 1.8;
-		stroke(
-			ctx,
-			`M${x} ${y}q${12 + row}-2 ${24 + (row % 3) * 4} 0`,
-			"#4f473a",
-			1,
-		);
-	}
-	stroke(ctx, "M701 364q25-4 48 1m-51 3q24-3 36 0", "#65564a", 0.85);
-	stroke(
-		ctx,
-		"M816 378l21 3m-22 1 26 4m-27 0 22 5m-25 1 23 5m-23-1 19 4",
-		"#615547",
-		1,
-	);
-}
-
-function drawMesaSketch(ctx: CanvasRenderingContext2D) {
-	fill(
-		ctx,
-		"M680 382l15-6 13 1 9-3 12 1 7-5 11-1 9 6 9 8-14-7-8-3-15 6-10-1-13 4Z",
-		"#5b4d3e",
-	);
-	stroke(ctx, "M676 383q15-5 26-3l13-3 14 1 13-8 14 8 10 5", "#45372d", 0.9);
-	stroke(
-		ctx,
-		"M677 386q34-5 57-1l28 3m-68 6 15-2 15 2 14-3 13 3",
-		"#665747",
-		0.76,
-	);
-}
-
-function drawPlantSketch(ctx: CanvasRenderingContext2D) {
-	const baseX = 799;
-	const baseY = 395;
-	for (let leaf = 0; leaf < 14; leaf++) {
-		const spread = leaf / 6.5 - 1;
-		const rootX = baseX + spread * 4;
-		const dx = spread * (19 + (leaf % 3));
-		const dy = 5 + (18 + (leaf % 4)) * (1 - Math.abs(spread));
-		stroke(
-			ctx,
-			`M${rootX} ${baseY + (leaf % 2)}q${dx * 0.33} ${-dy * 0.72} ${dx} ${-dy}`,
-			leaf % 3 ? "#514236" : "#41362d",
-			0.86,
-		);
-	}
-	stroke(ctx, "M785 397q13-1 24 0m-22 2 22 1", "#615244", 0.8);
-}
-
-function drawRockSketch(ctx: CanvasRenderingContext2D) {
-	fill(ctx, "M793 421l5-6 11-2 8 3 2 8-6 3-15 1Z", "#675849");
-	fill(ctx, "M795 421l5-6 9-2 4 3-4 4-9 3Z", "#887764");
-	stroke(
-		ctx,
-		"M793 421l5-6 11-2 8 3 2 8-6 3-15 1-5-4Zm7 6 4-7 5 0 5-4",
-		"#44382d",
-		0.9,
-	);
-}
-
-const pencilAngle = Math.atan2(-75, 54);
-
-function drawPencilShadow(ctx: CanvasRenderingContext2D) {
-	ctx.translate(848, 455);
-	ctx.rotate(pencilAngle);
-	const shade = ctx.createLinearGradient(0, 0, 0, 13);
-	shade.addColorStop(0, "#151311e0");
-	shade.addColorStop(0.37, "#1c1713b5");
-	shade.addColorStop(1, "#1c171300");
-	fill(ctx, "M0 0h89l4 3-5 9-76-2Z", shade);
-}
-
-function drawPencil(ctx: CanvasRenderingContext2D) {
-	ctx.translate(846, 453);
-	ctx.rotate(pencilAngle);
-
-	const lacquer = ctx.createLinearGradient(0, -3.4, 0, 3.4);
-	lacquer.addColorStop(0, "#8b7660");
-	lacquer.addColorStop(0.35, "#635141");
-	lacquer.addColorStop(1, "#382c22");
-	fill(ctx, "M18-3.4h57v6.8H18Z", lacquer);
-	fill(ctx, "M18-2.9h57v1.2H18Z", "#98836b");
-	fill(ctx, "M0 0l18-3.4 2 1.3v1.5l-1 1.5-1 2.5Z", "#9d8970");
-	fill(ctx, "M0 0l18-1.3 2 1.9-2 2.8Z", "#64513f");
-	fill(ctx, "M0 0l5.5-1.05v1.9Z", "#42392d");
-
-	const ferrule = ctx.createLinearGradient(0, -3.5, 0, 3.5);
-	ferrule.addColorStop(0, "#a3937e");
-	ferrule.addColorStop(0.45, "#7b6b56");
-	ferrule.addColorStop(1, "#534638");
-	fill(ctx, "M75-3.5h10v7H75Z", ferrule);
-	fill(ctx, "M77-3.5h1.2v7H77Zm5 0h1.4v7H82Z", "#55493d");
-	fill(ctx, "M85-3.4h4q3 0 3 2v2.8q0 2-3 2h-4Z", "#625248");
-	fill(ctx, "M85-3.4h4q2 0 2.5 1.15H85Z", "#8d7a68");
-}
-
-function drawDust(ctx: CanvasRenderingContext2D) {
-	ctx.setLineDash([0.5, 3, 1, 6]);
-	stroke(
-		ctx,
-		"M55 274q55-10 104-8m211 25q69-14 132-18m-328 67q58-2 90-16",
-		"#635b51",
-		1.1,
-	);
-}
-
-function drawFieldRocks(ctx: CanvasRenderingContext2D) {
-	for (const [top, bottom, body, lip] of [
-		[
-			414,
-			479,
-			"M38 476q8-22 22-44l16-11 21-5 20-2 13 5 19 16 13 20 11 23Z",
-			"M56 441l16-17 24-7 21-3 13 5 19 16-17-8-13-3-24 1-26 9Z",
-		],
-		[
-			454,
-			493,
-			"M152 482l11-15 17-11 12-2 12 5 12 8 13 18-39 8Z",
-			"M162 467l18-11 12-2 13 5 11 8-23-7-14 3Z",
-		],
-		[
-			441,
-			500,
-			"M311 498l9-16 19-21 22-12 29-8 17 2 16 9 11 13 8 18-34 17Z",
-			"M328 474l15-16 22-11 25-6 17 2 16 9-13-3-21 0-26 7-19 9Z",
-		],
-	] as const) {
-		const stone = ctx.createLinearGradient(0, top, 0, bottom);
-		stone.addColorStop(0, "#726351");
-		stone.addColorStop(0.33, "#473c31");
-		stone.addColorStop(1, "#181512");
-		fill(ctx, body, stone);
-		fill(ctx, lip, "#8f7d6560");
-	}
-	drawRock(ctx, "cluster", 7, 466, 0.72);
-	drawRock(ctx, "slab", 116, 473, 0.97);
-	drawRock(ctx, "slab", 377, 478, 1.27);
-	drawRock(ctx, "slab", 231, 398, 0.39);
-	drawRock(ctx, "cluster", 499, 366, 0.32);
-	drawRock(ctx, "boulder", 934, 360, 0.57);
-}
-
-function drawScrub(
-	ctx: CanvasRenderingContext2D,
-	center: number,
-	base: number,
-	width: number,
-	height: number,
-	stemCount: number,
-) {
-	const light = ctx.createLinearGradient(0, base, 0, base - height);
-	light.addColorStop(0, "#29231c");
-	light.addColorStop(0.42, "#635849");
-	light.addColorStop(1, "#a4957d");
-	ctx.strokeStyle = light;
-	ctx.lineCap = "round";
-	for (let stem = 0; stem < stemCount; stem++) {
-		const spread = (stem / (stemCount - 1)) * 2 - 1;
-		const reach = 0.52 + ((stem * 17 + 11) % 23) / 46;
-		const rise = height * reach * (1 - 0.56 * spread ** 2);
-		const root = center + spread * width * 0.18;
-		const lean = spread * width * 0.4 + ((stem % 3) - 1) * 5;
-		const xAt = (progress: number) => root + lean * progress ** 2;
-		ctx.lineWidth = (stem % 3 ? 1.1 : 1.7) * Math.min(1, height / 60);
-		ctx.beginPath();
-		ctx.moveTo(root, base);
-		ctx.quadraticCurveTo(root, base - rise / 2, xAt(1), base - rise);
-		for (let branch = 0; branch < 5; branch++) {
-			const progress = 0.32 + 0.13 * branch + (stem % 3) * 0.022;
-			const x = xAt(progress);
-			const y = base - rise * progress;
-			const direction = (stem + branch) % 2 ? -1 : 1;
-			const length = rise * (0.19 - 0.016 * branch);
-			ctx.moveTo(x, y);
-			ctx.quadraticCurveTo(
-				x + direction * length * 0.6,
-				y - length * 0.2,
-				x + direction * length * 0.74,
-				y - length * 0.72,
-			);
-		}
-		ctx.stroke();
-	}
-}
-
-function drawLedgeScrub(ctx: CanvasRenderingContext2D) {
-	drawScrub(ctx, 935, 364, 150, 89, 19);
-}
-
-function drawValleyScrub(ctx: CanvasRenderingContext2D) {
-	drawScrub(ctx, 39, 477, 77, 56, 14);
-	drawScrub(ctx, 317, 451, 114, 78, 17);
-	drawScrub(ctx, 568, 354, 67, 43, 11);
-}
-
-function drawFieldTufts(ctx: CanvasRenderingContext2D) {
-	drawDesertTufts(ctx, [
-		[420, 480, 66, 43],
-		[242, 480, 47, 33],
-		[214, 400, 35, 23],
-		[164, 370, 31, 21],
-	]);
-}
-
-export const fieldNotesPlants = [
-	{ kind: "cactus", x: 12, y: 72, width: 6 },
-	{ kind: "cactus", far: true, x: 28, y: 63, width: 2.8 },
-	{ kind: "grass", variant: "sparse", x: 7, y: 71, width: 2.4 },
-	{ kind: "grass", variant: "leaning", x: 4, y: 77, width: 2.9 },
-	{ kind: "grass", variant: "fan", x: 45, y: 78, width: 3.3 },
-	{ kind: "grass", variant: "leaning", x: 40, y: 72, width: 2.2 },
-] satisfies readonly Plant[];
 
 export const fieldNotesLayers = [
+	{
+		id: "distant-cliff-bench",
+		label: "Distant cliff bench",
+		draw: drawDistantCliffBench,
+	},
 	{ id: "escarpment", label: "Cliffs and valley", draw: drawEscarpment },
+	{ id: "cliff-shadow", label: "Cliff wall shadows", draw: drawCliffShadows },
+	{ id: "cliff-faces", label: "Western cliff faces", draw: drawCliffFaces },
+	...cliffReliefLayers,
 	{ id: "valley-folds", label: "Valley folds", draw: drawValleyFolds },
+	{
+		id: "valley-rill",
+		label: "Worn channel across the valley",
+		draw: drawValleyRill,
+	},
 	{ id: "valley-ridge", label: "Low valley ridge", draw: drawValleyRidge },
-	{ id: "dust", label: "Dust wisps", draw: drawDust },
+	{
+		id: "foreground-washes",
+		label: "Foreground washes",
+		draw: drawForegroundWashes,
+	},
 	{ id: "lookout-rise", label: "Lookout rise", draw: drawLookoutRise },
+	...lookoutSlopeLayers,
+	...lookoutSlopeRocks,
+	{ id: "trail-shoulders", label: "Trail shoulders", draw: drawTrailShoulders },
 	{ id: "trail", label: "Winding trail", draw: drawTrail },
-	{ id: "lookout", label: "Stone lookout", draw: drawLookout },
-	{ id: "ledge-scrub", label: "Scrub behind the ledge", draw: drawLedgeScrub },
-	{ id: "ledge", label: "Foreground ledge", draw: drawLedge },
-	{ id: "field-rocks", label: "Foreground rocks", draw: drawFieldRocks },
-	{ id: "tufts", label: "Foreground yuccas", draw: drawFieldTufts },
-	{ id: "scrub", label: "Valley scrub", draw: drawValleyScrub },
-	{ id: "notebook-shadow", label: "Notebook shadow", draw: drawNotebookShadow },
-	{ id: "notebook", label: "Notebook", draw: drawNotebook },
-	{ id: "pages", label: "Page edges and spine", draw: drawPageEdges },
-	{ id: "ink", label: "Handwritten notes", draw: drawHandwrittenNotes },
-	{ id: "mesa-sketch", label: "Mesa sketch", draw: drawMesaSketch },
-	{ id: "plant-sketch", label: "Plant sketch", draw: drawPlantSketch },
-	{ id: "rock-sketch", label: "Rock sketch", draw: drawRockSketch },
-	{ id: "pencil-shadow", label: "Pencil shadow", draw: drawPencilShadow },
-	{ id: "pencil", label: "Pencil", draw: drawPencil },
+	...lookoutLayers,
+	ledgeScrubLayer,
+	{
+		id: "ledge",
+		label: "Ledge body",
+		group: "Notebook ledge",
+		draw: drawLedgeBase,
+	},
+	{
+		id: "ledge-top",
+		label: "Upper sandstone shelf",
+		group: "Notebook ledge",
+		draw: drawLedgeTop,
+	},
+	{
+		id: "ledge-faces",
+		label: "Fractured ledge faces",
+		group: "Notebook ledge",
+		draw: drawLedgeFaces,
+	},
+	{
+		id: "ledge-weathering",
+		label: "Weathered ledge highlights",
+		group: "Notebook ledge",
+		draw: drawLedgeWeathering,
+	},
+	{
+		id: "ledge-crown",
+		label: "Lit ledge rim behind the notebook",
+		group: "Notebook ledge",
+		draw: drawLedgeCrown,
+	},
+	{
+		id: "west-boulder",
+		label: "West foreground boulder",
+		draw: (ctx: CanvasRenderingContext2D) =>
+			drawStratifiedBoulder(ctx, westFieldBoulder),
+	},
+	{
+		id: "middle-boulder",
+		label: "Middle foreground boulder",
+		draw: (ctx: CanvasRenderingContext2D) =>
+			drawStratifiedBoulder(ctx, middleFieldBoulder),
+	},
+	{
+		id: "east-boulder",
+		label: "East foreground boulder",
+		draw: (ctx: CanvasRenderingContext2D) =>
+			drawStratifiedBoulder(ctx, eastFieldBoulder),
+	},
+	...fieldRockLayers,
+	...fieldNotesVegetationLayers,
+	...notebookLayers,
 ] as const;

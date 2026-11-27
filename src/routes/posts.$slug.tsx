@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Button } from "#/components/ui/button";
 import { getLinkedPost, getPost, markdownSlug, postImage } from "#/lib/posts";
 import "./post.css";
 
@@ -67,16 +68,13 @@ function Post() {
 	const post = Route.useLoaderData();
 
 	return (
-		<main className="mx-auto w-full max-w-4xl px-5 py-12 sm:px-8 sm:py-20">
-			<Link className="text-sm underline underline-offset-4" to="/posts">
-				← Blog
-			</Link>
+		<main className="mx-auto w-full max-w-4xl px-5 pt-4 pb-10 sm:px-8 sm:pt-7 sm:pb-14">
 			<article>
-				<header className="mt-6">
-					{post.draft && (
-						<p className="mb-2 text-sm text-muted-foreground">Draft</p>
-					)}
-					<h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">
+				<header>
+					<Button asChild variant="ghost" size="sm" className="-ml-3">
+						<Link to="/posts">← Blog</Link>
+					</Button>
+					<h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">
 						{post.title}
 					</h1>
 					{post.summary && (
@@ -85,7 +83,7 @@ function Post() {
 					{post.cover && (
 						<img
 							alt=""
-							className="mt-8 aspect-2/1 w-full border border-border object-cover"
+							className="mt-6 aspect-2/1 w-full max-w-xl border border-border object-cover"
 							src={post.cover}
 						/>
 					)}

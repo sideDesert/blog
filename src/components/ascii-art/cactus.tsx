@@ -1,64 +1,42 @@
 import { useEffect, useRef } from "react";
+import { sampleGlyphCell } from "./ditherGlyphs";
 
 const W = 420;
 const H = 460;
 const stemBaseY = 453;
 
-// ─────────────────────────────────────────
-// Configuration
-// ─────────────────────────────────────────
+const homeSilhouette = {
+  height: 375,
+  stemWidth: 60,
+  leftWidth: 44,
+  rightWidth: 44,
+  leftSpread: 125,
+  rightSpread: 125,
+  leftHeight: 155,
+  rightHeight: 155,
+  leftJoint: 108,
+  rightJoint: 108,
+  leftCurve: 100,
+  rightCurve: 100,
+};
 
-const config = {
-  geometry: {
-    height: 375,
-    stemWidth: 60,
-    leftWidth: 44,
-    rightWidth: 44,
-    leftSpread: 125,
-    rightSpread: 125,
-    leftHeight: 155,
-    rightHeight: 155,
-    leftJoint: 108,
-    rightJoint: 108,
-    leftCurve: 100,
-    rightCurve: 100,
-    outline: 6,
-  },
-  left: {
-    threshold: 0.35,
-    period: 12,
-    thickness: 4,
-    spacing: 8,
-    shadow: 1,
-    phase: 0.3,
-    reverse: false,
-  },
-  stem: {
-    threshold: 0.2,
-    period: 13,
-    thickness: 4.5,
-    spacing: 8,
-    shadow: 1.2,
-    phase: 0.15,
-    reverse: false,
-  },
-  right: {
-    threshold: 0.25,
-    period: 12.5,
-    thickness: 4,
-    spacing: 8,
-    shadow: 1,
-    phase: 0.3,
-    reverse: false,
-  },
-  print: {
-    blur: 0.9,
-    threshold: 0.23,
-    resolution: 155,
-    grain: 0.23,
-    enabled: true,
+const silhouettes = {
+  home: homeSilhouette,
+  workshop: {
+    ...homeSilhouette,
+    stemWidth: 62,
+    leftWidth: 46,
+    rightWidth: 46,
+    leftSpread: 99,
+    rightSpread: 102,
+    leftHeight: 145,
+    rightHeight: 135,
+    leftJoint: 138,
+    rightJoint: 135,
   },
 };
+
+type Silhouette = keyof typeof silhouettes;
 
 // ─────────────────────────────────────────
 // Types and math
@@ -69,18 +47,13 @@ type Point = {
   y: number;
 };
 
-type Part = "left" | "right" | "stem";
-
 type Branch = {
-  name: Part;
   r: number;
   points: Point[];
 };
 
 type Sample = {
   i: number;
-  d: number;
-  u: number;
   v: number;
 };
 
@@ -89,7 +62,6 @@ type Segment = {
   dx: number;
   dy: number;
   l: number;
-  u: number;
 };
 
 const p = (x: number, y: number): Point => ({ x, y });
@@ -129,9 +101,7 @@ function bezier(a: Point, b: Point, c: Point, d: Point): Point[] {
   });
 }
 
-function arm(side: "left" | "right"): Branch {
-  const g = config.geometry;
-
+function arm(side: "left" | "right", g: typeof homeSilhouette): Branch {
   const x = 210;
   const j = 423 - g[`${side}Joint`];
 
@@ -143,7 +113,6 @@ function arm(side: "left" | "right"): Branch {
   const end = p(ax, j - bend);
 
   return {
-    name: side,
     r: g[`${side}Width`] / 2,
 
     points: [
@@ -154,8 +123,6 @@ function arm(side: "left" | "right"): Branch {
 }
 
 function segments(points: Point[]): Segment[] {
-  let u = 0;
-
   return points.slice(1).flatMap((z, i) => {
     const a = points[i];
 
@@ -165,22 +132,16 @@ function segments(points: Point[]): Segment[] {
 
     if (l <= 0.0001) return [];
 
-    const segment = { a, dx, dy, l, u };
-
-    u += l;
-
-    return [segment];
+    return [{ a, dx, dy, l }];
   });
 }
 
 // Find the nearest point on the branch.
-// u: distance along the branch.
 // v: signed perpendicular distance.
 // d: distance from the nearest point.
 
 function closest(x: number, y: number, ss: Segment[]) {
   let best = Infinity;
-  let u = 0;
   let v = 0;
 
   for (const s of ss) {
@@ -199,36 +160,30 @@ function closest(x: number, y: number, ss: Segment[]) {
     if (d < best) {
       best = d;
 
-      u = s.u + along;
       v = (-px * s.dy + py * s.dx) / s.l;
     }
   }
 
   return {
     d: Math.sqrt(best),
-    u,
     v,
   };
 }
 
 // ─────────────────────────────────────────
-// Rasterization and seamless outline
+// Rasterization
 // ─────────────────────────────────────────
 
-function buildGeometry() {
-  const g = config.geometry;
-
+function buildGeometry(g: typeof homeSilhouette) {
   const branches: Branch[] = [
-    arm("left"),
-    arm("right"),
+    arm("left", g),
+    arm("right", g),
     {
-      name: "stem",
       r: g.stemWidth / 2,
       points: [p(210, stemBaseY), p(210, 423 - g.height)],
     },
   ];
 
-  const mask = new Uint8Array(W * H);
   const owner = new Int8Array(W * H).fill(-1);
 
   const fields = branches.map((b, index) => {
@@ -263,7 +218,6 @@ function buildGeometry() {
 
         const i = y * W + x;
 
-        mask[i] = 1;
         owner[i] = index;
 
         values.push({ ...q, i });
@@ -273,178 +227,46 @@ function buildGeometry() {
     return { b, values };
   });
 
-  // Calculate the outline from the combined mask.
-  // This prevents seams between the arms and stem.
-
-  const edges = new Uint8Array(W * H);
-
-  const t = g.outline;
-  const reach = Math.ceil(t);
-
-  if (t > 0) {
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        const i = y * W + x;
-
-        if (!mask[i]) continue;
-
-        outer: for (let dy = -reach; dy <= reach; dy++) {
-          for (let dx = -reach; dx <= reach; dx++) {
-            if (dx * dx + dy * dy > t * t) {
-              continue;
-            }
-
-            const nx = x + dx;
-            const ny = y + dy;
-
-            if (nx < 0 || nx >= W || ny < 0 || ny >= H || !mask[ny * W + nx]) {
-              edges[i] = 1;
-              break outer;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return { fields, owner, edges };
+  return { fields, owner };
 }
 
-// ─────────────────────────────────────────
-// Curvature-aware dithering
-// ─────────────────────────────────────────
-
-function drawDither(ctx: CanvasRenderingContext2D) {
-  const { fields, owner, edges } = buildGeometry();
-
-  const image = ctx.createImageData(W, H);
-  const data = image.data;
+function drawCactusRelief(
+  out: CanvasRenderingContext2D,
+  ink: Ink,
+  silhouette: Silhouette,
+) {
+  const { fields, owner } = buildGeometry(silhouettes[silhouette]);
+  const image = out.createImageData(W, H);
+  const pitch = 6;
 
   fields.forEach(({ b, values }, index) => {
-    const c = config[b.name];
+    for (const point of values) {
+      if (owner[point.i] !== index) continue;
 
-    for (const q of values) {
-      if (owner[q.i] !== index) continue;
-
-      const edge = edges[q.i];
-
-      const v = q.v * (c.reverse ? -1 : 1);
-
-      // Shading across the branch.
-
-      const side = clamp(0.5 - v / (2 * b.r), 0, 1);
-
-      const darkness = clamp(0.12 + side * 0.95 * c.shadow, 0, 0.96);
-
-      // Rib index across the branch.
-
-      const rib = Math.floor((q.v + b.r) / c.spacing);
-
-      // Offset alternating ribs.
-
-      const phase = mod(q.u + mod(rib, 2) * c.period * c.phase, c.period);
-
-      // Darkness controls the mark length.
-      // Threshold independently controls visibility.
-
-      const ink =
-        edge ||
-        (darkness > c.threshold &&
-          phase < c.period * darkness &&
-          mod(q.v + b.r, c.spacing) < c.thickness);
-
-      if (!ink) continue;
-
-      const i = q.i * 4;
-
-      data[i] = 32;
-      data[i + 1] = 32;
-      data[i + 2] = 32;
-      data[i + 3] = 255;
+      const x = point.i % W;
+      const y = Math.floor(point.i / W);
+      const across = (point.v + b.r) / (2 * b.r);
+      const litFace = Math.exp(-(((across - 0.71) / 0.34) ** 2));
+      const rimLight = Math.exp(-(((across - 0.08) / 0.16) ** 2));
+      const rib = 0.85 + 0.15 * Math.cos((point.v / 12) * Math.PI * 2);
+      const density = (0.25 + 0.72 * litFace + 0.36 * rimLight) * rib;
+      const cell = sampleGlyphCell(
+        Math.floor(x / pitch),
+        Math.floor(y / pitch),
+      );
+      const mark =
+        cell.rank < 16 + density * 39 &&
+        Math.abs(mod(x + 0.5, pitch) / pitch - 0.5 - cell.scatterX) < 0.45 &&
+        Math.abs(mod(y + 0.5, pitch) / pitch - 0.5 - cell.scatterY) < 0.47;
+      const baseFade = Math.min(1, (stemBaseY - y) / 9);
+      const alpha = mark ? 0.42 + density * 0.56 : 0.12 + density * 0.13;
+      const offset = point.i * 4;
+      image.data[offset] = ink[0];
+      image.data[offset + 1] = ink[1];
+      image.data[offset + 2] = ink[2];
+      image.data[offset + 3] = 255 * alpha * baseFade;
     }
   });
-
-  ctx.putImageData(image, 0, 0);
-  return edges;
-}
-
-// ─────────────────────────────────────────
-// Ink post-processing
-// ─────────────────────────────────────────
-
-function processInk(
-  source: HTMLCanvasElement,
-  out: CanvasRenderingContext2D,
-  inkColor: Ink,
-  outline: Uint8Array,
-) {
-  const c = config.print;
-
-  out.clearRect(0, 0, W, H);
-
-  if (!c.enabled) {
-    out.drawImage(source, 0, 0);
-    return;
-  }
-
-  // Reduce the print resolution.
-
-  const small = document.createElement("canvas");
-
-  small.height = c.resolution;
-  small.width = Math.round((c.resolution * W) / H);
-
-  const s = small.getContext("2d");
-
-  if (!s) {
-    throw new Error("Canvas 2D unavailable");
-  }
-
-  s.fillStyle = "#fff";
-  s.fillRect(0, 0, small.width, small.height);
-
-  s.drawImage(source, 0, 0, small.width, small.height);
-
-  // Upscale and simulate ink bleeding.
-
-  out.fillStyle = "#fff";
-  out.fillRect(0, 0, W, H);
-
-  out.imageSmoothingEnabled = true;
-  out.filter = `blur(${c.blur}px)`;
-
-  out.drawImage(small, 0, 0, W, H);
-
-  out.filter = "none";
-
-  // Apply grain and convert back to binary ink.
-
-  const image = out.getImageData(0, 0, W, H);
-  const data = image.data;
-
-  for (let i = 0; i < data.length; i += 4) {
-    const x = (i / 4) % W;
-    const y = Math.floor(i / 4 / W);
-
-    // Deterministic noise.
-
-    const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
-
-    const noise = (n - Math.floor(n) - 0.5) * c.grain;
-
-    const darkness = 1 - data[i] / 255;
-
-    const ink =
-      y < stemBaseY && (outline[i / 4] || darkness + noise > c.threshold);
-
-    data[i] = inkColor[0];
-    data[i + 1] = inkColor[1];
-    data[i + 2] = inkColor[2];
-
-    // Transparent background.
-
-    data[i + 3] = ink ? 255 : 0;
-  }
 
   out.putImageData(image, 0, 0);
 }
@@ -467,29 +289,20 @@ const DARK_GREEN_INKS = {
 
 const bitmaps = new Map<string, HTMLCanvasElement>();
 
-function renderCactus(canvas: HTMLCanvasElement, inkColor: Ink) {
+function renderCactus(
+  canvas: HTMLCanvasElement,
+  inkColor: Ink,
+  silhouette: Silhouette,
+) {
   const out = canvas.getContext("2d");
 
   if (!out) return;
 
-  const key = inkColor.join(",");
+  const key = `${silhouette}:${inkColor.join(",")}`;
 
   let bitmap = bitmaps.get(key);
 
   if (!bitmap) {
-    const source = document.createElement("canvas");
-
-    source.width = W;
-    source.height = H;
-
-    const ctx = source.getContext("2d");
-
-    if (!ctx) {
-      throw new Error("Canvas 2D unavailable");
-    }
-
-    const outline = drawDither(ctx);
-
     const result = document.createElement("canvas");
 
     result.width = W;
@@ -501,7 +314,7 @@ function renderCactus(canvas: HTMLCanvasElement, inkColor: Ink) {
       throw new Error("Canvas 2D unavailable");
     }
 
-    processInk(source, target, inkColor, outline);
+    drawCactusRelief(target, inkColor, silhouette);
 
     bitmap = result;
     bitmaps.set(key, bitmap);
@@ -520,6 +333,7 @@ type CactusProps = {
   className?: string;
   darkGreen?: boolean;
   far?: boolean;
+  silhouette?: Silhouette;
 };
 
 function CactusLayer({
@@ -528,20 +342,22 @@ function CactusLayer({
   width,
   className,
   filterClassName,
+  silhouette,
 }: {
   inkColor: Ink;
   mode: "light" | "dark";
   width: number | string;
   className?: string;
   filterClassName?: string;
+  silhouette: Silhouette;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (ref.current) {
-      renderCactus(ref.current, inkColor);
+      renderCactus(ref.current, inkColor, silhouette);
     }
-  }, [inkColor]);
+  }, [inkColor, silhouette]);
 
   return (
     <canvas
@@ -564,6 +380,7 @@ export default function Cactus({
   className,
   darkGreen = true,
   far = false,
+  silhouette = "home",
 }: CactusProps) {
   const inks = darkGreen ? DARK_GREEN_INKS : NEUTRAL_INKS;
   const lightFilter = far
@@ -579,6 +396,7 @@ export default function Cactus({
         mode="light"
         width={width}
         className={className}
+        silhouette={silhouette}
         filterClassName={lightFilter}
       />
       <CactusLayer
@@ -586,6 +404,7 @@ export default function Cactus({
         mode="dark"
         width={width}
         className={className}
+        silhouette={silhouette}
       />
     </>
   );

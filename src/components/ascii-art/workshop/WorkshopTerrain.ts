@@ -1,23 +1,29 @@
+import { fill, fillTerrainContours } from "./canvasShapes";
+import { rockLayer } from "./DesertDetails";
+import {
+	middleMesaFaces,
+	twinSpireFaces,
+	westernTablelandFaces,
+} from "./distantRidgeFaces";
+import {
+	drawStratifiedBoulder,
+	westWorkshopBoulder,
+} from "./foregroundBoulders";
+import { mesaFaces } from "./mesaFaces";
+import { towerValleyContours } from "./towerValleyContours";
+
 const mesaSkyline = `
 	M24 225 L44 221 58 210 89 208 103 194 105 184
 	127 170 133 153 136 130 151 125 157 122 171 123
 	187 125 206 121 221 120 226 118 242 119 256 125
-	271 133 275 147 292 148 307 146 326 147 340 158
+	271 132 277 135 283 141 290 143 297 147 310 146 326 147 340 158
 	344 175 350 196 362 205 382 214 389 223 415 225
-	429 223 466 223 473 244 488 250 511 253 524 252 533 244
-	589 244 593 257 610 262 624 270 642 273 673 278
-	700 282 730 281 742 278 754 274 784 274 791 285
+	429 222 460 220 470 223 477 246 488 250 511 251 524 250 531 242
+	555 241 587 241 593 245 597 258 610 261 624 268 642 272 673 277
+	700 282 730 280 742 277 754 272 785 272 790 278 794 285
 	817 292 842 295 854 289 875 291 893 283 897 271
 	900 258 905 257 910 275 915 273 918 257 920 246
 	926 245 930 262 933 274 951 285 976 289
-`;
-
-const litCliffFaces = `
-	M226 119 242 119 256 125 271 133 275 147 292 148 306 147 324 149 339 158 344 175 350 195 363 207
-	345 204 330 185 323 164 312 153 320 178 313 190 303 184 297 169 295 153 283 154 273 150 262 138
-	267 164 274 176 293 183 269 181 251 174 240 164 233 146Z
-	M262 191 284 184 298 190 306 205 319 212 342 210 361 215 382 215 389 223 415 225 420 239 404 243
-	371 232 341 233 320 225 297 227 273 219Z
 `;
 
 const leftFoothills = `
@@ -27,8 +33,8 @@ const leftFoothills = `
 `;
 
 const towerKnoll = `
-	M564 335 Q595 320 623 322 L633 315 647 315 660 318 701 318 708 324 724 331 Q746 332 771 348
-	L798 354 809 349 824 354 835 361 864 358 873 363 Q935 363 977 374
+	M564 334 Q594 320 621 322 L632 316 650 315 664 317 701 317 707 325 725 330 Q746 336 772 348
+	L794 355 805 349 816 351 826 356 839 361 861 360 876 365 Q930 366 977 374
 	L976 411 Q913 397 835 404 Q785 386 721 389 Q639 352 564 353Z
 `;
 
@@ -114,147 +120,17 @@ export function drawWorkshopTerrain(context: CanvasRenderingContext2D) {
 	context.lineJoin = "round";
 
 	fillLandform(context, mesas, 120, 390, "#2b2722", "#111");
-	fillLandform(
-		context,
-		"M133 151 136 130 157 122 171 123 181 125 176 143 175 158 168 172 148 174 125 178Z",
-		122,
-		177,
-		"#484036",
-		"#22201a",
-	);
-	fillLandform(context, litCliffFaces, 122, 244, "#685a48", "#25211c");
-
-	context.save();
-	context.clip(new Path2D(mesas));
-	fillLandform(
-		context,
-		`
-		M142 127l14-4 17 0 16 3 22-5 18-2 25 5-19-1-28 4-21 4-13-4-17 0-14 4Z
-		M267 133l8 12 25 2 22 0 17 11-15-6-24-2-26-2Z
-		M87 197l21-5 20-14 21-4 35-5 30-2 21-7 31 7 19 11-22-4-32-5-38 6-36 4-27 3-17 11Z
-		M283 197l14-7 11 13 23 9 32 4 27 8 23 1 14 9-37-3-28-5-31-5-25-11Z
-		M267 230l35 5 42 9 28 3 26 6-38 3-26-7-46-5-22-5Z
-		`,
-		119,
-		260,
-		"#7062538f",
-		"#6c5b4c55",
-	);
-	fillLandform(
-		context,
-		`
-		M176 124l19 1-3 18 5 17-11 19-27 7 16-25Z
-		M221 120l9 1 12 29 3 17 25 20-29-6-14-13-5-24Z
-		M273 147l12 1 3 16 8 20-15-1-8-17Z
-		M313 147l12 2 14 14 5 21 12 19-21-9-11-27Z
-	`,
-		125,
-		209,
-		"#181614",
-		"#24211c",
-	);
-	fillLandform(
-		context,
-		`
-		M103 194l21-10 23-2 23-8 49-2 17-5 32 9 21 11-12 5-36-7-40 4-53 2-26 8Z
-		M72 214l33-6 43-2 44-7 38 1 24-4 32 7-19 6-54 2-49 4-45-1-33 6Z
-		M247 206l27-15 16-4 10 10 18 6 16 1 28 12 22 5 24 10 16 6-36-4-37-8-33-9-23-5-26 5Z
-		M227 237l32-8 31 3 37 11 34 6 38 1 26 10-27 1-55-5-37-7-39-11Z
-	`,
-		172,
-		269,
-		"#443b30",
-		"#26211b",
-	);
-	fillLandform(
-		context,
-		`M114 187l30-11 29-7 38 0 22-5 17 5-14 12-38 4-34 11-38 3Z
-		M126 199l30-7 59-7 28 4-15 11-33 2-54 7Z`,
-		164,
-		211,
-		"#211b168e",
-		"#1b141000",
-	);
-	fillLandform(
-		context,
-		`M237 121l16 5 18 9 7 14 16 4 7 15-9 9-21-14-16-2-11-20Z
-		M287 148l27-1 20 10 8 21 13 21-14-2-8-15-16-7-8-15-9-5Z
-		M274 197l18-9 7 8 18 8 17-2 24 11 17 3 22 11-23-1-20-4-26-3-15-7-20-3Z`,
-		120,
-		231,
-		"#84746164",
-		"#83705a66",
-	);
-
-	const cliffFaces = [
-		[145, 130, -6, 43, 3, 83],
-		[154, 127, -2, 45, 2, 74],
-		[165, 125, 2, 42, 3, 73],
-		[175, 125, -3, 41, 4, 87],
-		[224, 120, 0, 48, 4, 114],
-		[234, 121, 2, 53, 5, 128],
-		[242, 120, 6, 53, 3, 105],
-		[250, 123, 8, 53, 4, 124],
-		[258, 126, 9, 53, 5, 139],
-		[268, 132, 9, 52, 3, 119],
-		[279, 148, 8, 43, 5, 138],
-		[292, 149, 6, 44, 5, 112],
-		[303, 147, 7, 50, 4, 132],
-		[314, 148, 7, 53, 6, 149],
-		[327, 153, 11, 48, 5, 135],
-		[336, 157, 12, 49, 5, 109],
-		[288, 182, 4, 36, 4, 124],
-		[340, 209, 8, 31, 4, 110],
-		[365, 218, 10, 33, 3, 89],
-		[388, 233, 6, 37, 4, 91],
-		[150, 170, -10, 39, 4, 69],
-		[167, 176, -5, 31, 3, 72],
-		[198, 173, -7, 33, 5, 75],
-		[217, 170, -3, 34, 3, 76],
-		[261, 179, 6, 33, 4, 78],
-		[312, 218, 6, 45, 5, 88],
-		[326, 221, 6, 45, 3, 76],
-		[356, 232, 9, 37, 4, 85],
-		[375, 238, 10, 38, 5, 86],
-	];
-	for (const [x, y, lean, depth, width, light] of cliffFaces) {
-		const shadow = `M${x - 1} ${y}l-${width} 2 q${lean / 2} ${depth / 3} ${lean + 1} ${depth}l${width + 3} 1Z`;
-		const face = `M${x} ${y}l${width} 2 q${lean / 2} ${depth / 3} ${lean + 2} ${depth}l-${width + 3} -2Z`;
-		fillLandform(context, shadow, y, y + depth, "#15130f", "#18151000");
-		fillLandform(
-			context,
-			face,
-			y,
-			y + depth,
-			`rgb(${light} ${light * 0.88} ${light * 0.73})`,
-			"#30271c55",
-		);
-	}
-	fillLandform(
-		context,
-		`M175 175q25 0 43-7l16-3 18 2 25 6 17 6-6 4-23-5-24-3-24 2-25 2Z
-		M265 213q19-4 34-2l15 4 17 3 21 6 28 3 17 9 17 6-10 3-26-10-29-2-20-7-28-3-19-3Z`,
-		166,
-		246,
-		"#726453",
-		"#554838",
-	);
-	context.restore();
 	fillLandform(context, leftFoothills, 244, 319, "#34302a", "#171614");
 	fillLandform(
 		context,
-		`M187 248l10-1 4 9-3 5-4-8-9 2Z
-		M224 246l5-2 3 11 4 10-8-2-3-8Z
-		M240 233l5-1 3 10 1 19 16 14-17-5-7-7 1-19Z
-		M258 254l5-3 4 23 14 9-12-3-8-9Z
-		M29 272q49-9 93 6l38 7-28 1q-62-13-103-10Z
+		`M29 272q49-9 93 6l38 7-28 1q-62-13-103-10Z
 		M105 288q51 3 83 15t74 14q-48 3-80-9t-77-16Z`,
 		232,
 		319,
 		"#746452",
 		"#30281f60",
 	);
-	fillLandform(context, towerKnoll, 315, 408, "#37322b", "#151412");
+	fillLandform(context, towerKnoll, 315, 408, "#302a24", "#151412");
 	fillLandform(context, foreground, 377, 474, "#2d2821", "#11111100");
 	fillLandform(
 		context,
@@ -292,62 +168,119 @@ export function drawWorkshopTerrain(context: CanvasRenderingContext2D) {
 	context.restore();
 }
 
-export function drawDistantRidge(context: CanvasRenderingContext2D) {
+export function drawMesaFaces(ctx: CanvasRenderingContext2D) {
+	ctx.clip(new Path2D(mesas));
+	const wallShadow = ctx.createLinearGradient(0, 119, 0, 239);
+	wallShadow.addColorStop(0, "#211d1a");
+	wallShadow.addColorStop(0.52, "#191715");
+	wallShadow.addColorStop(0.83, "#1b1815d0");
+	wallShadow.addColorStop(1, "#211b1600");
+	ctx.fillStyle = wallShadow;
+	ctx.fillRect(24, 114, 390, 125);
+	fillTerrainContours(ctx, mesaFaces);
+}
+
+export const mesaStrataLayers = (
+	[
+		[
+			"mesa-crown",
+			"Mesa crown",
+			120,
+			155,
+			"#8b7a6650",
+			"#88766168",
+			`M132 141l4-13 22-6 21 1-10 4-16 1-9 4-5 10Z
+			M186 125l34-5 22-1 16 5 15 8 13 9 7 7-11 4-10-9-16-10-16-7-20-2-20 3Z`,
+		],
+		[
+			"mesa-shelf",
+			"Mesa middle shelf",
+			171,
+			230,
+			"#70604e40",
+			"#88745c50",
+			`M120 179q25-9 48-5l58-8 20 4-23 5-29 0-28 7-27-1-15 4Z
+			M260 212l17-2 18 5 13 2 13 7-21 1-16-6-18-1Z
+			M333 190l12 2 9 11 9 10 10 3-6 5-13-4-13-12Z`,
+		],
+		[
+			"mesa-buttresses",
+			"Mesa lower buttresses",
+			222,
+			280,
+			"#78685427",
+			"#4a3e3012",
+			`M247 222l35 2 13 6-5 7 5 19-5 13-9-11-2-20-22-9Z
+			M305 230l13 1 5 16 8 8 1 13-16-7-7-13Z
+			M336 230l23 3 7 23 22 9 5 13-17-6-20-12-12-21Z
+			M377 235l16 3 5 12 13 6 4 14-11-5-14-10Z`,
+		],
+		[
+			"mesa-west-shadow",
+			"Shadow below the west shelf",
+			222,
+			269,
+			"#18151262",
+			"#18151200",
+			`M25 228q37-6 78-6l65 2 57-2 30 7-21 17-29 3-32 6-44 7-105 3Z`,
+		],
+	] as const
+).map(([id, label, top, bottom, lit, shadow, faces]) => ({
+	id,
+	label,
+	group: "Main mesa strata",
+	draw(ctx: CanvasRenderingContext2D) {
+		ctx.clip(new Path2D(mesas));
+		ctx.filter = "blur(0.9px)";
+		fillLandform(ctx, faces, top, bottom, lit, shadow);
+	},
+}));
+
+export const distantRidgeLayers = (
+	[
+		["western-tableland", "Western tableland faces", westernTablelandFaces],
+		["middle-mesa", "Middle mesa faces", middleMesaFaces],
+		["twin-spires", "Twin spire faces", twinSpireFaces],
+	] as const
+).map(([id, label, contours]) => ({
+	id,
+	label,
+	group: "Distant ridge faces",
+	draw(ctx: CanvasRenderingContext2D) {
+		ctx.clip(new Path2D(mesas));
+		fillTerrainContours(ctx, contours);
+	},
+}));
+
+export function drawTowerKnoll(ctx: CanvasRenderingContext2D) {
 	fillLandform(
-		context,
-		`M410 225l23-4 32 1 5 3 4 18 8 9 18 5-28-2-7-9-4-20-21-2Z
-		M521 253l12-9 55-1 4 5 4 10 31 13-22-3-17-8-4-13-37 1-12 3Z
-		M714 282l27-3 13-7 29 1 9 13 28 6-16 3-24-11-8-7-17 1-12 6Z
-		M873 291l17-9 6-10 7-17 4 2 3 16 6 1 3-15 2-16 6 2 3 15 7 16 17 10-17-3-10-15-5-13-3 18-7 6-5-3-4-12-5 13-9 8Z`,
-		222,
-		305,
-		"#4e4438",
-		"#322b23",
-	);
-	fillLandform(
-		context,
-		`M465 223l5 2 4 18 10 10-11-3-7-12Z
-		M584 244l4-1 4 5 4 10 13 8-19-6Z
-		M780 274l3-1 9 13 13 4-15 0-7-7Z
-		M899 267l4-12 4 2-3 14-8 8Z
-		M922 244l5 1 3 15 7 16-9-6-5-13Z`,
-		238,
-		293,
-		"#675b4c",
-		"#40362c",
-	);
-	fillLandform(
-		context,
-		`M568 336q41-13 64-16l17-4 52 1 7 8 23 9 30 14-25-6-31-9-13-9-39-1-21 4-25 5-31 6Z
-		M684 325l20 2 12 6 24 12-19-3-16-7-16-2Z`,
+		ctx,
+		`M568 335q43-13 64-15l18-4 51 1 6 7 22 8 29 13-24-5-30-10-11-6-37-1-21 4-24 5-34 5Z
+		M685 325l20 2 11 7 23 9-18-4-16-6-16-2Z`,
 		315,
 		354,
-		"#55493a",
-		"#332b21",
+		"#4a4033",
+		"#302820",
+	);
+	fillLandform(
+		ctx,
+		`M593 330q16-9 35-10l10-2-6 5-23 2-13 6Z
+		M671 319l9-2 19.5.1 4.5 6-4-.5-3-3-13-.4-10 1.5Z`,
+		317,
+		332,
+		"#766651ae",
+		"#45372b00",
 	);
 }
 
 export function drawValleyBanks(context: CanvasRenderingContext2D) {
 	fillLandform(
 		context,
-		`M25 273q39-8 84 2l42 13 39 14 58 11 67-1 25 5
-		-33 4-63-1-56-11-48-16-31-9Q57 274 25 280Z
-		M375 253q49 1 92 13l56 18 62 18 66 7-21 6-50-6-57-16-65-21-46-9Z
-		M683 311l45-10 41 3 33 12 45 4 56-13 56-7 18 8-30-1-42 8-59 12-53-5-39-9-29-4-33 6Z`,
+		"M375 253q49 1 92 13l56 18 62 18 66 7-21 6-50-6-57-16-65-21-46-9Z",
 		253,
 		333,
 		"#493f34",
 		"#2a241d",
-	);
-	fillLandform(
-		context,
-		`M547 337l37-9 38-5 35-8 39 2 12 9 19 4 28 15 20 8-38-5-34-14-20-3-13-6-33 0-34 9-33 4Z
-		M717 350l28-4 31 3 21 12 33 4 28 11 57 5-21 4-43-6-25-9-32-3-26-14-29 0Z
-		M801 356q30-9 55-9l47-7 66 4-19 5-42-2-49 8-32 2Z`,
-		313,
-		390,
-		"#594b3e",
-		"#332a2100",
 	);
 	fillLandform(
 		context,
@@ -359,4 +292,350 @@ export function drawValleyBanks(context: CanvasRenderingContext2D) {
 		"#1b1713",
 		"#241e1900",
 	);
+	fillTerrainContours(context, towerValleyContours);
 }
+
+export const westValleyLayers = (
+	[
+		[
+			"west-valley-shadow",
+			"Shadow beneath the valley bank",
+			269,
+			327,
+			"#1b1714b0",
+			"#15131100",
+			`M23 274q32-10 58-1l39 9 26 9 51 14 47 11 59 1 34-2
+			-26 10-39 2-45-4-49-13-54-17-45-10-42-1-14 5Z`,
+		],
+		[
+			"west-valley-bank",
+			"Lit edge of the valley bank",
+			272,
+			320,
+			"#7a68517e",
+			"#66554334",
+			`M50 274q19-4 32-3l20 5 22 3 18 5 28 6 21 6 35 8 39 6 38 5 20 2
+			-21 1-40-3-38-6-27-6-30-7-33-10-17-1-21-6-15-2-13-4Z`,
+		],
+		[
+			"west-valley-rill",
+			"Runoff below the west bank",
+			285,
+			331,
+			"#66564075",
+			"#44372b00",
+			`M79 282q8 11 19 15 35 15 71 24l27 5-20 1-22-5-40-12
+			q-35-10-39-27Z`,
+		],
+	] as const
+).map(([id, label, top, bottom, near, far, form]) => ({
+	id,
+	label,
+	group: "West valley bank",
+	draw(ctx: CanvasRenderingContext2D) {
+		ctx.filter = "blur(0.9px)";
+		fillLandform(ctx, form, top, bottom, near, far);
+	},
+}));
+
+const hoodooLayers = (
+	[
+		[
+			"west-foothill-butte",
+			"West foothill butte",
+			244,
+			280,
+			"M187 249l5-3 6 1 3 3 1 9 6 5-8-2-4-10-6 1-4 9-11 2Z",
+			"M193 248l5-1 3 4 1 9 6 4-9-4-2-9-5-1Z",
+		],
+		[
+			"west-foothill-needle",
+			"West foothill needle",
+			242,
+			269,
+			"M219 263l3-17 2-3 4 1 2 5 1 15 6 5-9-3-2-17-2-2-3 16Z",
+			"M223 246l2-3 3 1 2 6 1 17-3-4-1-13-2-3Z",
+		],
+		[
+			"main-foothill-spire",
+			"Main foothill spire",
+			229,
+			289,
+			`M236 263l1-25 3-7 4-1 5 4 2 24 4 11 16 13-16-6-12-10-4 7-15 10-9 3Z`,
+			`M240 234l4-4 5 4 2 24 3 12-6-9-2-24-4-2Z
+			M240 265l5-3 4 6 13 13-10-5-8-6-7 4-9 8-6 1Z`,
+		],
+		[
+			"east-foothill-needle",
+			"East foothill needle",
+			250,
+			288,
+			"M255 267l2-16 3-1 4 4 1 17 8 8 12 8-13-5-10-9-3-18-2-1Z",
+			"M259 251l2-1 3 4 1 17 5 8-7-7-1-16Z",
+		],
+	] as const
+).map(([id, label, top, bottom, body, face]) => ({
+	id,
+	label,
+	group: "West foothill spires",
+	draw(ctx: CanvasRenderingContext2D) {
+		fillLandform(ctx, body, top, bottom, "#65574660", "#342b2220");
+		fillLandform(ctx, face, top, bottom, "#9c886e68", "#5b4a381c");
+	},
+}));
+
+export const westHoodooLayers = [
+	{
+		id: "foothill-talus",
+		label: "Sandstone slope below the spires",
+		group: "West foothill spires",
+		draw(ctx: CanvasRenderingContext2D) {
+			ctx.filter = "blur(1.2px)";
+			fillLandform(
+				ctx,
+				`M196 294q19-6 29-16l15-9 9-1 15 4 12 8 25 13
+				-22-3-17-7-17-2-16 3-16 8-22 4Z
+				M217 295l22-8 17 1 21 7 18 3-23-1-16-4-16-2-18 5Z`,
+				268,
+				300,
+				"#74614a52",
+				"#64503918",
+			);
+		},
+	},
+	...hoodooLayers,
+] as const;
+
+export function drawWorkshopForecourt(context: CanvasRenderingContext2D) {
+	fillLandform(
+		context,
+		`M148 412q63-12 129-5 46 6 95 1 63-7 134 2 53 7 113 3 70-5 140 4
+		l13 19q-86 3-144 7-77 1-141-5-70-9-126-4-50 8-111 4-42-6-99 8Z
+		M224 447q62-14 115-6 40 8 94 4 66-8 146 4 49 6 101-4l-9 10q-54 12-108 6-60-10-126-5-58 6-112-3-47-8-99 2Z`,
+		406,
+		469,
+		"#382e2599",
+		"#28201900",
+	);
+}
+
+export function drawForecourtRipples(ctx: CanvasRenderingContext2D) {
+	ctx.filter = "blur(1.2px)";
+	fillLandform(
+		ctx,
+		`M222 424q17-4 34-7l18 1-13 4q-21 3-38 5Z
+		M268 425q34-7 74-5l20 2-25 1q-35-1-61 5Z
+		M345 435q36-4 62-2 39 3 78 0l25 3q-56 4-106 1-36-2-58 1Z
+		M480 440q47-5 76-3 37 1 65-4l-4 5q-36 4-74 3-37 1-61 2Z`,
+		417,
+		444,
+		"#6b5c497a",
+		"#5b4b3b44",
+	);
+}
+
+export function drawTerraceFaces(context: CanvasRenderingContext2D) {
+	context.clip(new Path2D(mesas));
+	fillLandform(
+		context,
+		"M714 306l27-8 30 5 18 7 29 8-15 6-20-6-31-5-29 1Z",
+		296,
+		333,
+		"#1813109e",
+		"#1a151182",
+	);
+	fillLandform(
+		context,
+		"M710 307l24-9 31 4 19 7 25 2-18 4-27-9-30-4-17 6Z",
+		296,
+		327,
+		"#70604e68",
+		"#574a3b35",
+	);
+}
+
+export function drawEasternTerrace(ctx: CanvasRenderingContext2D) {
+	ctx.clip(new Path2D(mesas));
+	fillLandform(
+		ctx,
+		`M794 299q24-6 42 0t40 0q29 2 59-3 16-8 41-7l-3 7q-21-2-39 7-35 6-61 4-21 6-43-2-16-4-36 1Z`,
+		289,
+		315,
+		"#181411a0",
+		"#1713103d",
+	);
+	fillLandform(
+		ctx,
+		`M794 300q20-9 37-3 19 6 42 2l-5 4q-23 3-40-2-14-4-32 2Z
+		M878 298q22 3 53-2l7-2-3 4q-26 6-56 3Z
+		M940 294q15-7 35-7l-3 3q-16 0-29 6Z`,
+		285,
+		312,
+		"#88755e7a",
+		"#6c5b4870",
+	);
+}
+
+export const eastRidgeLayers = (
+	[
+		[
+			"east-ridge-west-spire",
+			"West spire at the east ridge",
+			256,
+			291,
+			"#87735c58",
+			"#66523d16",
+			"M896 278l3-18 3-3 3 1 2 7 1 11 9 11-11-4-5-12-2-6-2 12-5 10Z",
+		],
+		[
+			"east-ridge-east-spire",
+			"East spire at the east ridge",
+			245,
+			292,
+			"#9b866b68",
+			"#705a431b",
+			"M913 277l5-15 1-12 3-5 5 1 3 8 1 14 8 14 6 6-10-3-8-10-3-18-2-5-1 3-3 14Z",
+		],
+		[
+			"east-ridge-caps",
+			"Lit caps on the eastern tablelands",
+			271,
+			290,
+			"#84725c55",
+			"#69564124",
+			`M731 282l10-5 13-5 25-1 8 1 2 6 6 7-10-3-8-5-18 1-16 4Z
+			M839 296l10-6 11-3 13 2 9 4-14-1-13 3-10 3Z`,
+		],
+		[
+			"east-ridge-scarp",
+			"Sunlit eastern escarpment",
+			293,
+			317,
+			"#7c6a5070",
+			"#6f59401e",
+			`M748 293q22 0 43 5l12 4-25 1-13-4-16-3Z
+			M816 300q28 5 48-3l19-6 13 0-17 8-21 8-24-1-16-3Z
+			M885 304q20-7 39-8l18-6 16-1-14 6-19 7-18 3-19 3Z`,
+		],
+		[
+			"east-ridge-lower-shelf",
+			"Lower shelf on the east ridge",
+			329,
+			348,
+			"#69574342",
+			"#54433114",
+			"M834 335q26 1 49-1l37-3 43-1-17 4-28 1-33 5-35-2Z",
+		],
+		[
+			"east-valley-shadow",
+			"Shade across the eastern valley floor",
+			371,
+			408,
+			"#1b171398",
+			"#1b171300",
+			`M706 376q32-8 81-2l71 2 56 1 61-1v27l-61-7-54 5-62-8-68-2Z`,
+		],
+	] as const
+).map(([id, label, top, bottom, light, shade, face]) => ({
+	id,
+	label,
+	group: "Eastern ridge and valley",
+	draw(ctx: CanvasRenderingContext2D) {
+		ctx.clip(new Path2D(mesas));
+		ctx.filter = "blur(0.85px)";
+		fillLandform(ctx, face, top, bottom, light, shade);
+	},
+}));
+
+export const workshopRockLayers = [
+	rockLayer("west-slab", "Slab below the west boulder", [
+		"slab",
+		39,
+		410,
+		0.57,
+	]),
+	rockLayer("west-cluster", "Cluster beside the west boulder", [
+		"cluster",
+		94,
+		410,
+		0.75,
+	]),
+	rockLayer("cactus-slab", "Slab below the cactus", ["slab", 124, 428, 0.42]),
+	rockLayer("lean-to-slab", "Slab by the lean-to", ["slab", 231, 421, 0.35]),
+	rockLayer("yard-cluster", "Cluster west of the yard boulder", [
+		"cluster",
+		291,
+		438,
+		0.7,
+	]),
+	rockLayer("yard-boulder", "Yard boulder", ["boulder", 308, 433, 0.96]),
+	rockLayer("bench-cluster", "Cluster in front of the bench", [
+		"cluster",
+		345,
+		445,
+		0.51,
+	]),
+	rockLayer("forecourt-west-chip", "West chip in the forecourt", [
+		"slab",
+		261,
+		460,
+		0.25,
+	]),
+	rockLayer("forecourt-middle-chip", "Middle chip in the forecourt", [
+		"boulder",
+		407,
+		459,
+		0.29,
+	]),
+	rockLayer("forecourt-east-chip", "East chip in the forecourt", [
+		"boulder",
+		465,
+		457,
+		0.3,
+	]),
+	rockLayer("east-slab", "Slab below the east boulder", [
+		"slab",
+		840,
+		441,
+		0.35,
+	]),
+	rockLayer("ridge-slab", "Slab by the east ridge", ["slab", 883, 418, 0.42]),
+] as const;
+
+export function drawWestBoulder(ctx: CanvasRenderingContext2D) {
+	drawStratifiedBoulder(ctx, westWorkshopBoulder);
+}
+
+export const workshopPebbleLayers = (
+	[
+		["west-pebbles", "Pebbles around the cactus", 29, 421, 210, 38, 44],
+		["yard-pebbles", "Pebbles by the lean-to", 251, 446, 213, 18, 46],
+		["bench-pebbles", "Pebbles in front of the bench", 440, 448, 180, 14, 25],
+		[
+			"knoll-pebbles",
+			"Pebbles at the foot of the knoll",
+			709,
+			429,
+			140,
+			38,
+			41,
+		],
+		["east-pebbles", "Pebbles by the east ridge", 851, 420, 98, 20, 20],
+	] as const
+).map(([id, label, left, top, width, depth, count]) => ({
+	id,
+	label,
+	group: "Pebble patches",
+	draw(ctx: CanvasRenderingContext2D) {
+		for (let pebble = 0; pebble < count; pebble++) {
+			const x = left + ((pebble * 139) % width);
+			const y = top + ((pebble * 73 + left) % depth);
+			const size = 0.8 + (pebble % 7) * 0.22;
+			fill(
+				ctx,
+				`M${x} ${y}l${size} -1 ${size} .65-.4 .75Z`,
+				pebble % 4 ? "#43392e" : "#6a5b49",
+			);
+		}
+	},
+}));

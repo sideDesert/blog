@@ -7,27 +7,31 @@ export function DesertPageIntro({
 	description,
 	landscape,
 	children,
-	className = "",
 }: {
 	title: string;
 	description: string;
 	landscape: ReactNode;
 	children?: ReactNode;
-	className?: string;
 }) {
 	return (
-		<div className={`${desertRow} ${className}`}>
-			<div className="min-w-0 min-[56rem]:aspect-[2/1] min-[56rem]:self-start min-[56rem]:[&>*]:h-full">
+		<div
+			className={`${desertRow} border-b border-(--rule) pb-5 min-[56rem]:pb-0`}
+		>
+			<div className="mx-auto aspect-2/1 w-full min-w-0 max-w-lg self-start [&>*]:h-full min-[56rem]:max-w-none">
 				{landscape}
 			</div>
-			<header className={`${desertAside} min-[56rem]:pt-5`}>
+			<header
+				className={`${desertAside} mt-2 min-[56rem]:mt-0 min-[56rem]:pt-5`}
+			>
 				<div className="flex items-start justify-between gap-2">
 					<h1 className="text-[1.625rem] font-semibold leading-[1.2]">
 						{title}
 					</h1>
 					<DesertAudio />
 				</div>
-				<p className="mt-5 text-[0.925rem]">{description}</p>
+				<p className="mt-4 max-w-[42ch] text-[0.925rem] min-[56rem]:mt-5">
+					{description}
+				</p>
 				{children}
 			</header>
 		</div>

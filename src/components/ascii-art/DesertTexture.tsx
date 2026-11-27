@@ -3,7 +3,8 @@ import { useEffect, useRef } from "react";
 const textureWidth = 1230;
 const textureHeight = 274;
 
-type CloudCurve = { slope: number; bend: number };
+// Vertical percentages at five evenly spaced positions from left to right.
+type CloudHeights = readonly [number, number, number, number, number];
 
 type Cloud = {
 	centerX: number;
@@ -13,16 +14,17 @@ type Cloud = {
 	depth: number;
 	drift: number;
 	seed: number;
-	curve?: CloudCurve;
+	heights?: CloudHeights;
+	opacity?: number;
 };
 
 export type CloudPlacement = {
 	x: number;
-	y: number;
+	heights: CloudHeights;
 	spread: number;
 	depth: number;
 	drift: number;
-	curve?: CloudCurve;
+	opacity?: number;
 };
 
 const initialClouds: Cloud[] = [
@@ -59,9 +61,11 @@ function advanceClouds(activeClouds: Cloud[], deltaSeconds: number) {
 		cloud.centerX += cloud.drift * deltaSeconds;
 
 		if (cloud.drift < 0 && cloud.centerX + cloud.spread < 0) {
-			activeClouds[index] = createCloud("right");
+			if (cloud.heights) cloud.centerX = textureWidth + cloud.spread;
+			else activeClouds[index] = createCloud("right");
 		} else if (cloud.drift > 0 && cloud.centerX - cloud.spread > textureWidth) {
-			activeClouds[index] = createCloud("left");
+			if (cloud.heights) cloud.centerX = -cloud.spread;
+			else activeClouds[index] = createCloud("left");
 		}
 	}
 }
@@ -69,6 +73,24 @@ function advanceClouds(activeClouds: Cloud[], deltaSeconds: number) {
 function random(x: number, y: number, seed = 0) {
 	const value = Math.sin(x * 127.1 + y * 311.7 + seed * 74.7) * 43758.5453;
 	return value - Math.floor(value);
+}
+
+function cloudHeight(heights: CloudHeights, horizontal: number) {
+	const position = (horizontal + 1) * 2;
+	const segment = Math.min(3, Math.floor(position));
+	const progress = position - segment;
+	const before = heights[Math.max(0, segment - 1)];
+	const from = heights[segment];
+	const to = heights[segment + 1];
+	const after = heights[Math.min(4, segment + 2)];
+	const startSlope = (to - before) / 2;
+	const endSlope = (after - from) / 2;
+	const change = to - from;
+	const quadratic = 3 * change - 2 * startSlope - endSlope;
+	const cubic = -2 * change + startSlope + endSlope;
+	return (
+		from + progress * (startSlope + progress * (quadratic + progress * cubic))
+	);
 }
 
 function drawClouds(
@@ -83,29 +105,28 @@ function drawClouds(
 		spread,
 		depth,
 		seed,
-		curve,
+		heights,
+		opacity = 1,
 	} of activeClouds) {
 		if (centerX + spread < 0 || centerX - spread > textureWidth) continue;
 
-		const rowPitch = curve ? 2.2 : 2.7;
-		const columnPitch = curve ? 2.3 : 3.5;
+		const rowPitch = heights ? 1.65 : 2.7;
+		const columnPitch = heights ? 1.65 : 3.5;
 		for (let offsetY = -depth; offsetY <= depth; offsetY += rowPitch) {
 			for (let offsetX = -spread; offsetX <= spread; offsetX += columnPitch) {
 				const x = centerX + offsetX;
 				const textureX = patternX + offsetX;
 				const horizontal = offsetX / spread;
-				const curveOffset = curve
-					? ((horizontal * curve.slope + horizontal ** 2 * curve.bend) *
-							height) /
-						100
-					: 0;
-				const y = (centerY / textureHeight) * height + offsetY + curveOffset;
+				const center = heights
+					? cloudHeight(heights, horizontal) / 100
+					: centerY / textureHeight;
+				const y = center * height + offsetY;
 				const taper = Math.max(
 					0,
 					1 -
 						Math.hypot(
 							horizontal,
-							(offsetY + (curve ? 0 : offsetX * 0.018)) / depth,
+							(offsetY + (heights ? 0 : offsetX * 0.018)) / depth,
 						),
 				);
 				const wisps = 0.6 + 0.4 * Math.sin(offsetX * 0.08 + offsetY * 0.7);
@@ -113,11 +134,13 @@ function drawClouds(
 				if (random(textureX, y, seed) > taper * wisps) continue;
 
 				context.globalAlpha =
-					(0.22 + taper * 0.55) * (0.5 + random(textureX, y, seed + 1) * 0.5);
+					opacity *
+					(0.22 + taper * 0.55) *
+					(0.5 + random(textureX, y, seed + 1) * 0.5);
 				context.fillRect(
 					x + random(textureX, y, seed + 2),
 					y + random(textureX, y, seed + 3) * 0.6,
-					0.5 + random(textureX, y, seed + 4) * 2,
+					0.5 + random(textureX, y, seed + 4) * (heights ? 1.1 : 2),
 					0.65 + taper * 0.55,
 				);
 			}
@@ -167,14 +190,15 @@ export default function DesertTexture({
 		let previousTime = 0;
 		let animationFrame = 0;
 		const activeClouds = clouds
-			? clouds.map(({ x, y, spread, depth, drift, curve }) => ({
+			? clouds.map(({ x, heights, spread, depth, drift, opacity }) => ({
 					centerX: (x / 100) * textureWidth,
 					patternX: (x / 100) * textureWidth,
-					centerY: (y / 100) * textureHeight,
+					centerY: (heights[2] / 100) * textureHeight,
 					spread: (spread / 100) * textureWidth,
 					depth,
 					drift,
-					curve,
+					heights,
+					opacity,
 					seed: 0,
 				}))
 			: initialClouds.map((cloud) => ({ ...cloud }));

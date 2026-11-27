@@ -1,3 +1,4 @@
+import { desertDitherColumns } from "../ditherGlyphs";
 import {
 	createInitialConfig,
 	type Irregularities,
@@ -73,7 +74,11 @@ export function createInitialState(): TerrainState {
 		drawingSeams: false,
 		reference: "",
 		status: "",
-		render: { dither: true, gridSize: 0.25, dotSize: 0.76 },
+		render: {
+			dither: true,
+			gridSize: 100 / desertDitherColumns,
+			dotSize: 0.72,
+		},
 		view: {
 			showReference: true,
 			showShapes: false,

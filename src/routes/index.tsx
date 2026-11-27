@@ -1,4 +1,8 @@
-import { desertAside, desertMain, desertRow } from "#/components/ui/desert-layout";
+import {
+  desertAside,
+  desertMain,
+  desertRow,
+} from "#/components/ui/desert-layout";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useReducer, useState } from "react";
 import Landscape from "#/components/ascii-art/Landscape";
@@ -83,12 +87,9 @@ function pickDesertQuote() {
   return desertQuotes[Math.floor(Math.random() * desertQuotes.length)]!;
 }
 
-function LatestPosts({ className }: { className: string }) {
+function LatestPosts({ className = "" }: { className?: string }) {
   return (
-    <section
-      className={`min-h-60 py-6 ${className}`}
-      aria-labelledby="latest-posts"
-    >
+    <section className={`py-4 ${className}`} aria-labelledby="latest-posts">
       <h2
         id="latest-posts"
         className="mt-2 mb-4 text-[1.25rem] font-semibold leading-[1.2]"
@@ -191,7 +192,7 @@ function Home() {
             onClose={() => setPlaygroundOpen(false)}
             className="max-sm:max-h-[70svh] min-[56rem]:sticky min-[56rem]:top-4 min-[56rem]:col-start-2 min-[56rem]:row-span-2 min-[56rem]:row-start-1 min-[56rem]:h-[calc(100svh-8rem)] min-[56rem]:max-h-[44rem]"
           />
-          <LatestPosts className="min-[56rem]:col-start-1 min-[56rem]:row-start-2 py-4" />
+          <LatestPosts className="min-[56rem]:col-start-1 min-[56rem]:row-start-2" />
         </div>
       </main>
     );
@@ -209,12 +210,12 @@ function Home() {
         </blockquote>
       </DesertPageIntro>
 
-      <div className={`${desertRow} border-t border-(--rule)`}>
-        <LatestPosts className="min-[56rem]:-mt-1  min-[56rem]:min-h-[clamp(10rem,calc(100svh-22.5rem),18rem)] py-4" />
+      <div className={`${desertRow} flex-1`}>
+        <LatestPosts />
         <button
           type="button"
           onClick={() => setDesertQuote(pickDesertQuote())}
-          className={`${desertAside} mt-4 flex w-full max-w-64 cursor-pointer items-start justify-start text-left min-[56rem]:mt-0 min-[56rem]:max-w-none min-[56rem]:min-h-[9.625rem] min-[56rem]:self-stretch min-[56rem]:pt-[1.625rem]`}
+          className={`${desertAside} flex w-full max-w-64 cursor-pointer items-start justify-start pt-2 pb-5 text-left min-[56rem]:max-w-none min-[56rem]:self-stretch min-[56rem]:pt-[1.625rem]`}
           aria-label="Show another desert quote"
         >
           <span className="block min-[56rem]:max-w-[20ch]">{desertQuote}</span>

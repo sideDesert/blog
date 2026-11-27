@@ -4,18 +4,37 @@ import open from "./grass/open.svg";
 import sparse from "./grass/sparse.svg";
 import spreading from "./grass/spreading.svg";
 
-const grassArt = { fan, leaning, open, sparse, spreading };
+const grassArt = {
+	fan: [fan, "196/92"],
+	leaning: [leaning, "121/51"],
+	open: [open, "101/54"],
+	sparse: [sparse, "96/44"],
+	spreading: [spreading, "179/103"],
+};
 
 export default function Grass({
 	variant,
 	color,
+	windDelay,
 }: {
 	variant: keyof typeof grassArt;
 	color: boolean;
+	windDelay?: number;
 }) {
-	const filter = color
-		? "[filter:sepia(1)_saturate(2.6)_hue-rotate(65deg)_brightness(var(--grass-brightness,0.5))] [--grass-brightness:0.5] dark:[--grass-brightness:0.8]"
-		: "brightness-0 dark:brightness-100";
+	const [src, aspectRatio] = grassArt[variant];
 
-	return <img className={`block h-auto w-full dark:opacity-60 ${filter}`} src={grassArt[variant]} alt="" />;
+	return (
+		<span
+			aria-hidden="true"
+			className={`block w-full dark:opacity-60 ${windDelay === undefined ? "" : "desert-grass-sway"}`}
+			style={{
+				aspectRatio,
+				backgroundColor: color
+					? "var(--desert-grass)"
+					: "var(--desert-grass-neutral)",
+				mask: `url("${src}") center / 100% 100% no-repeat`,
+				animationDelay: windDelay === undefined ? undefined : `${windDelay}s`,
+			}}
+		/>
+	);
 }
