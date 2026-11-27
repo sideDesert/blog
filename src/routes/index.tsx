@@ -5,7 +5,7 @@ import {
   desertRow,
 } from "#/components/ui/desert-layout";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useReducer, useState } from "react";
+import { lazy, Suspense, useEffect, useReducer, useState } from "react";
 import Landscape from "#/components/ascii-art/Landscape";
 import { DEFAULT_CIRCLES } from "#/components/ascii-art/Sun";
 import { DEFAULT_SUN_PALETTES } from "#/components/ascii-art/sun/palette";
@@ -15,7 +15,6 @@ import {
 } from "#/components/ascii-art/terrain/state";
 import { DesertPageIntro } from "#/components/ui/DesertPageIntro";
 import { useDesertAudioContext } from "#/components/audio/DesertAudioContext";
-import Playground from "#/components/playground/Playground";
 import {
   readShowSunBounds,
   readSunCircles,
@@ -28,6 +27,10 @@ import {
 } from "#/lib/playgroundStorage";
 
 import { posts } from "#/lib/posts";
+
+const Playground = lazy(() => import("#/components/playground/Playground"));
+const playgroundPosition =
+  "pointer-events-auto fixed inset-x-0 bottom-0 z-30 h-[min(45svh,26rem)] border-t border-(--rule) min-[56rem]:static min-[56rem]:col-start-2 min-[56rem]:h-full min-[56rem]:border-t-0 min-[56rem]:border-l";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -200,22 +203,30 @@ function Home() {
       </div>
       {playgroundOpen && (
         <div className={`${desertRow} pointer-events-none contents min-[56rem]:absolute min-[56rem]:inset-0 min-[56rem]:z-30 min-[56rem]:grid-rows-[minmax(0,1fr)]`}>
-          <Playground
-            terrainState={terrainState}
-            terrainDispatch={terrainDispatch}
-            sunPalettes={sunPalettes}
-            onSunPalettesChange={setSunPalettes}
-            sunCircles={sunCircles}
-            onSunCirclesChange={setSunCircles}
-            showSunBounds={showSunBounds}
-            onShowSunBoundsChange={setShowSunBounds}
-            audioPlaying={audio.playing}
-            audioSettings={audio.settings}
-            onAudioToggle={audio.toggle}
-            onAudioUpdate={audio.update}
-            onClose={() => setPlaygroundOpen(false)}
-            className="pointer-events-auto fixed inset-x-0 bottom-0 z-30 h-[min(45svh,26rem)] border-t border-(--rule) min-[56rem]:static min-[56rem]:col-start-2 min-[56rem]:h-full min-[56rem]:border-t-0 min-[56rem]:border-l"
-          />
+          <Suspense
+            fallback={
+              <p role="status" className={`${playgroundPosition} bg-background p-4`}>
+                Loading playground…
+              </p>
+            }
+          >
+            <Playground
+              terrainState={terrainState}
+              terrainDispatch={terrainDispatch}
+              sunPalettes={sunPalettes}
+              onSunPalettesChange={setSunPalettes}
+              sunCircles={sunCircles}
+              onSunCirclesChange={setSunCircles}
+              showSunBounds={showSunBounds}
+              onShowSunBoundsChange={setShowSunBounds}
+              audioPlaying={audio.playing}
+              audioSettings={audio.settings}
+              onAudioToggle={audio.toggle}
+              onAudioUpdate={audio.update}
+              onClose={() => setPlaygroundOpen(false)}
+              className={playgroundPosition}
+            />
+          </Suspense>
         </div>
       )}
     </main>

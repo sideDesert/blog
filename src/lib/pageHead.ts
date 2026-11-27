@@ -1,6 +1,6 @@
 const siteUrl = "https://sidedesert.github.io/blog/";
-const shareImage = new URL("side-desert-share.jpg", siteUrl).href;
-const shareImageAlt = "sideDesert wordmark beside a cactus and sunset over dunes";
+const shareImage = new URL("side-desert-landscape.jpg", siteUrl).href;
+const shareImageAlt = "Stippled desert panorama with a sun, mesas, and saguaros";
 
 export const siteDescription =
 	"Notes on databases, systems, and software projects by Siddarth Saha.";
