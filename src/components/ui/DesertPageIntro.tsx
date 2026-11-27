@@ -17,7 +17,7 @@ export function DesertPageIntro({
 		<div
 			className={`${desertRow} border-b border-(--rule) pb-5 min-[56rem]:pb-0`}
 		>
-			<div className="mx-auto aspect-2/1 w-full min-w-0 max-w-lg self-start [&>*]:h-full min-[56rem]:max-w-none">
+			<div className="mx-auto aspect-2/1 w-full min-w-0 max-w-lg self-start [&>*]:h-full min-[56rem]:max-w-(--desert-art-width)">
 				{landscape}
 			</div>
 			<header

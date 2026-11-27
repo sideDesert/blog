@@ -123,6 +123,16 @@ body > main {
   .project-catalogue {
     min-height: 8rem;
   }
+}
+
+@media (min-width: 56rem) and (min-height: 42rem) {
+  body:has(> .about-page) {
+    height: 100svh;
+  }
+
+  .about-page {
+    min-height: 0;
+  }
 
   .about-copy {
     min-height: 0;
