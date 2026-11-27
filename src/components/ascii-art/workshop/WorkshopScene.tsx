@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { NightStars } from "../NightStars";
 import { useDesertColor } from "../useDesertColor";
 import { useDesertTheme } from "../useDesertTheme";
+import { campfireLightLayers } from "./Campsite";
 import {
 	type DitherPaint,
 	readDesertInks,
@@ -10,6 +11,11 @@ import {
 } from "./ditherCanvas";
 import { DustGlyphs, settleDust, stirDust } from "./DustGlyphs";
 import { fieldNotesDither } from "./FieldNotes";
+import {
+	daylightNotebookDetails,
+	drawDaylightPage,
+	notebookPaperFaces,
+} from "./FieldNotesNotebook";
 import {
 	beaconPatch,
 	createPatch,
@@ -79,6 +85,7 @@ export function WorkshopScene({
 	const beaconTimer = useRef<number | undefined>(undefined);
 	const { colorEnabled, toggleColor } = useDesertColor();
 	const theme = useDesertTheme();
+	const daylight = theme === "light";
 	const [motion, setMotion] = useState(false);
 	const [displayScale, setDisplayScale] = useState(1);
 	const rasterScale = dither ? displayScale : 1;
@@ -126,10 +133,42 @@ export function WorkshopScene({
 		const ctx = canvas.current?.getContext("2d", { willReadFrequently: true });
 		if (!ctx) return;
 		ctx.setTransform(rasterScale, 0, 0, rasterScale, 0, 0);
-		const visibleLayers = layers.filter((layer) => !hidden?.has(layer.id));
+		const paperFaces: string[] = [];
+		const visibleLayers = layers.flatMap((layer) => {
+			if (hidden?.has(layer.id)) return [];
+			if (!daylight) return [layer];
+			if (
+				lampLayers.some((id) => id === layer.id) ||
+				campfireLightLayers.some((id) => id === layer.id) ||
+				layer.id === "notebook-paper-grain"
+			)
+				return [];
+			const detail = daylightNotebookDetails.get(layer.id);
+			if (detail) {
+				return [
+					{
+						...layer,
+						draw: (context: CanvasRenderingContext2D, seconds?: number) =>
+							detail(context, dither, seconds),
+					},
+				];
+			}
+			const face = notebookPaperFaces.get(layer.id);
+			if (!face) return [layer];
+			paperFaces.push(face);
+			return [
+				{
+					...layer,
+					draw: (context: CanvasRenderingContext2D) =>
+						drawDaylightPage(context, face, dither),
+				},
+			];
+		});
 		const paint: DitherPaint | undefined = dither
 			? {
 					style: ditherStyle,
+					daylight,
+					paperFaces,
 					palette: colorEnabled
 						? readDesertInks(ctx.canvas, theme === "dark")
 						: undefined,
@@ -228,6 +267,7 @@ export function WorkshopScene({
 		ditherStyle,
 		colorEnabled,
 		theme,
+		daylight,
 		scene,
 		motion,
 		hasTower,
@@ -272,13 +312,17 @@ export function WorkshopScene({
 				width={workshopWidth * rasterScale}
 				height={workshopHeight * rasterScale}
 				role="img"
-				aria-label={label}
-				className={`block h-full w-full ${colorEnabled ? "" : dither ? "invert dark:invert-0" : "grayscale"}`}
+				aria-label={
+					daylight && scene === "about"
+						? "A tent in a sunny desert canyon"
+						: label
+				}
+				className={`block h-full w-full ${!colorEnabled && (dither ? "not-dark:[image-rendering:pixelated]" : "grayscale")}`}
 			/>
 			{!hidden?.has("clouds") && visibleClouds?.length !== 0 && (
 				<SceneClouds clouds={visibleClouds} color={colorEnabled} />
 			)}
-			{!hidden?.has("stars") && (
+			{!daylight && !hidden?.has("stars") && (
 				<>
 					<NightStars stars={stars} verticalScale={stars ? 1 : 0.62} />
 					{scene === "about" && motion && <ShootingStar />}

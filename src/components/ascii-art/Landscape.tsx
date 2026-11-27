@@ -50,14 +50,7 @@ export default function Landscape({
 				role="img"
 				aria-label="A stippled desert panorama with mesas and saguaros"
 			>
-				<DesertTexture
-					layer="sky"
-					className={
-						colorEnabled
-							? "filter-[sepia(0.75)_saturate(1.9)_hue-rotate(-8deg)]"
-							: "brightness-0 dark:brightness-100"
-					}
-				/>
+				<DesertTexture layer="sky" color={colorEnabled} />
 				<NightStars />
 				<div className="absolute inset-x-0 bottom-[calc(var(--ground-depth)-6.75cqw)] h-[calc(55%+11.78cqw)]">
 					<Terrain

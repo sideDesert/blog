@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { type TouchEvent, useRef, useState } from "react";
 import bustubArt from "#/assets/projects/bustub.svg";
 import rabbitholeArt from "#/assets/projects/rabbithole.svg";
 import shibaArt from "#/assets/projects/shiba.svg";
@@ -71,8 +72,10 @@ function ProjectDetails({ project }: { project: (typeof projects)[number] }) {
 
 function Projects() {
 	const [active, setActive] = useState(0);
+	const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
-	function move(direction: number) {
+	function move(direction: -1 | 1) {
+		if (window.matchMedia("(min-width: 80rem)").matches) return;
 		const pageSize = window.matchMedia("(min-width: 40rem)").matches ? 2 : 1;
 		setActive(
 			(index) =>
@@ -83,6 +86,29 @@ function Projects() {
 		);
 	}
 
+	function startSwipe(event: TouchEvent) {
+		const touch = event.touches[0];
+		swipeStart.current =
+			event.touches.length === 1
+				? { x: touch.clientX, y: touch.clientY }
+				: null;
+	}
+
+	function finishSwipe(event: TouchEvent) {
+		const start = swipeStart.current;
+		swipeStart.current = null;
+		if (!start) return;
+		const touch = event.changedTouches[0];
+		const horizontal = touch.clientX - start.x;
+		const vertical = touch.clientY - start.y;
+		if (
+			Math.abs(horizontal) >= 42 &&
+			Math.abs(horizontal) > 1.25 * Math.abs(vertical)
+		) {
+			move(horizontal < 0 ? 1 : -1);
+		}
+	}
+
 	return (
 		<main className={`${desertMain} viewport-page`}>
 			<DesertPageIntro
@@ -90,54 +116,60 @@ function Projects() {
 				description="Things I’ve built to learn how software works."
 				landscape={<WorkshopScene scene="projects" />}
 			>
-				<div className="mt-3 flex items-center justify-between gap-3">
-					<Link to="/workshop" className="underline underline-offset-4">
-						Desert Workshop
-					</Link>
-					<div className="flex gap-2 min-[80rem]:hidden">
-						<Button
-							variant="ghost"
-							size="icon-sm"
-							aria-label="Previous project"
-							aria-controls="project-catalogue"
-							onClick={() => move(-1)}
-						>
-							←
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon-sm"
-							aria-label="Next project"
-							aria-controls="project-catalogue"
-							onClick={() => move(1)}
-						>
-							→
-						</Button>
-					</div>
-				</div>
+				<Link
+					to="/workshop"
+					className="mt-3 inline-block underline underline-offset-4"
+				>
+					Desert Workshop
+				</Link>
 			</DesertPageIntro>
-			<ul
-				id="project-catalogue"
-				aria-label="Project catalogue"
-				aria-live="polite"
-				className="project-catalogue"
-			>
-				{projects.map((project, index) => (
-					<li
-						key={project.name}
-						className={`min-h-[17rem] min-w-0 content-start gap-3 bg-background px-4 py-3 sm:px-5 min-[80rem]:grid ${index === active ? "grid" : "hidden"} ${Math.floor(index / 2) === Math.floor(active / 2) ? "sm:grid" : "sm:hidden"}`}
-					>
-						<img
-							src={project.art}
-							alt=""
-							width={610}
-							height={project.height}
-							className="aspect-[610/300] max-h-[5.5rem] w-full object-contain dark:invert"
-						/>
-						<ProjectDetails project={project} />
-					</li>
-				))}
-			</ul>
+			<div className="grid min-h-0 grid-cols-[3.5rem_minmax(0,1fr)_3.5rem] min-[80rem]:grid-cols-1">
+				<Button
+					variant="ghost"
+					className="size-14 self-center min-[80rem]:hidden"
+					aria-label="Previous project"
+					aria-controls="project-catalogue"
+					onClick={() => move(-1)}
+				>
+					<ArrowLeft aria-hidden="true" className="size-6" />
+				</Button>
+				<ul
+					id="project-catalogue"
+					aria-label="Project catalogue"
+					aria-live="polite"
+					className="project-catalogue touch-pan-y touch-pinch-zoom"
+					onTouchStart={startSwipe}
+					onTouchEnd={finishSwipe}
+					onTouchCancel={() => {
+						swipeStart.current = null;
+					}}
+				>
+					{projects.map((project, index) => (
+						<li
+							key={project.name}
+								className={`min-h-[17rem] min-w-0 content-start gap-3 bg-background px-2 py-3 sm:px-5 min-[80rem]:grid ${index === active ? "grid" : "hidden"} ${Math.floor(index / 2) === Math.floor(active / 2) ? "sm:grid" : "sm:hidden"}`}
+						>
+							<img
+								src={project.art}
+								alt=""
+								width={610}
+								height={project.height}
+								className="aspect-[610/300] max-h-[5.5rem] w-full object-contain dark:invert"
+							/>
+							<ProjectDetails project={project} />
+						</li>
+					))}
+				</ul>
+				<Button
+					variant="ghost"
+					className="size-14 self-center min-[80rem]:hidden"
+					aria-label="Next project"
+					aria-controls="project-catalogue"
+					onClick={() => move(1)}
+				>
+					<ArrowRight aria-hidden="true" className="size-6" />
+				</Button>
+			</div>
 		</main>
 	);
 }

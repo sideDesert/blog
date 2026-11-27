@@ -21,6 +21,29 @@ const rightPage =
 	"M744 434q21-31 37-68 36-4 78 9l-30 68C799 438 768 424 744 434Z";
 const paperPath = `${leftPage} ${rightPage}`;
 const frontEdge = "M644 421C677 419 721 414 744 434C768 424 799 438 829 443";
+export const notebookPaperFaces = new Map([
+	["notebook-left-page", leftPage],
+	["notebook-right-page", rightPage],
+]);
+
+export function drawDaylightPage(
+	ctx: CanvasRenderingContext2D,
+	path: string,
+	dither: boolean,
+) {
+	const left = path === leftPage;
+	const shade = ctx.createLinearGradient(
+		left ? 758 : 766,
+		left ? 405 : 411,
+		left ? 716 : 804,
+		left ? 387 : 429,
+	);
+	shade.addColorStop(0, dither ? paperInk(40) : "#dbd8d0");
+	shade.addColorStop(0.28, dither ? paperInk(26) : "#f0eee8");
+	shade.addColorStop(0.8, dither ? paperInk(16) : "#fcfbf7");
+	fill(ctx, path, shade);
+	stroke(ctx, path, dither ? paperInk(55) : "#a49f93", 0.7);
+}
 const cover =
 	"M637 427l62-68q53-10 82 7 38-5 83 9l-33 80c-34-2-65-13-87-12q-6 4-13-2c-27-8-64-8-94-10Z";
 
@@ -189,18 +212,39 @@ function drawNotebookSpine(ctx: CanvasRenderingContext2D) {
 	stroke(ctx, "M737 440q8 5 15 2", paperInk("#786552"), 0.85);
 }
 
-function drawPageCorner(ctx: CanvasRenderingContext2D, seconds = 0) {
+function drawPageCorner(
+	ctx: CanvasRenderingContext2D,
+	seconds = 0,
+	daylight?: "dither" | "flat",
+) {
 	const gust = Math.max(0, Math.sin(seconds * 1.42 - 0.4));
 	const lift = 1 + 8 * gust ** 2 + gust * Math.sin(seconds * 6.8);
 	const tipX = 857 - lift * 0.26;
 	const tipY = 376 - lift;
 	const edge = `M829 373Q846 376 ${tipX} ${tipY}`;
-	fill(ctx, "M856 377q-2 10-8 20-10-10-18-12Z", paperInk("#51443890"));
+	fill(
+		ctx,
+		"M856 377q-2 10-8 20-10-10-18-12Z",
+		daylight === "flat"
+			? "#dedbd3"
+			: paperInk(daylight ? "#39393965" : "#51443890"),
+	);
 	const paper = ctx.createLinearGradient(tipX, tipY, 838, 391);
-	paper.addColorStop(0, paperInk("#b09d83"));
-	paper.addColorStop(1, paperInk("#9d8c76"));
+	paper.addColorStop(
+		0,
+		daylight === "flat" ? "#fcfbf7" : paperInk(daylight ? 16 : "#b09d83"),
+	);
+	paper.addColorStop(
+		1,
+		daylight === "flat" ? "#e6e3db" : paperInk(daylight ? 33 : "#9d8c76"),
+	);
 	fill(ctx, `${edge}L${tipX - 8} 396q-6-11-20-15Z`, paper);
-	stroke(ctx, edge, paperInk("#baa78c"), 0.9);
+	stroke(
+		ctx,
+		edge,
+		daylight === "flat" ? "#a49f93" : paperInk(daylight ? 48 : "#baa78c"),
+		0.9,
+	);
 }
 
 function drawHandwrittenNotes(ctx: CanvasRenderingContext2D) {
@@ -243,19 +287,21 @@ function drawHandwrittenNotes(ctx: CanvasRenderingContext2D) {
 	);
 }
 
-function drawMesaSketch(ctx: CanvasRenderingContext2D) {
+function drawMesaSketch(ctx: CanvasRenderingContext2D, daylight = false) {
 	const skyline =
 		"M676 382l9-1 7-4 6 1 5-2 6 2 8-1 4 1 7-3 7-4 6 1 4 4 5 1 3 3 5 0 9 5";
 	const rock = ctx.createLinearGradient(0, 371, 0, 389);
 	rock.addColorStop(0, paperInk("#93816b"));
 	rock.addColorStop(0.6, paperInk("#a18e77"));
 	rock.addColorStop(1, paperInk("#aa977e"));
+	ctx.globalAlpha = daylight ? 0.35 : 1;
 	fill(ctx, `${skyline}l-13 3-20-2-17 2-19 0-22-2Z`, rock);
 	fill(
 		ctx,
 		"M691 378l9 2 3-3 5 2-4 3-15 2-7-1Z M721 380l7-4 7-4 3 2-6 7 6 3h-13l2-3Z M744 377l6 1 4 3h5l6 4-11-1-5-3-7 1Z",
 		paperInk("#80705a"),
 	);
+	ctx.globalAlpha = 1;
 	stroke(ctx, skyline, paperInk("#504235"), 1.2);
 	stroke(
 		ctx,
@@ -327,8 +373,9 @@ function drawPlantSketch(ctx: CanvasRenderingContext2D) {
 	stroke(ctx, "M794 397q11-1 20 0m-17 2q4-1 10 0", paperInk("#6b5948"), 1.05);
 }
 
-function drawRockSketch(ctx: CanvasRenderingContext2D) {
+function drawRockSketch(ctx: CanvasRenderingContext2D, daylight = false) {
 	const edge = "M794 419l4-4 6-.5 3-1.5 7 .4 4 3 1.6 6-3 4-8 2-11-2-3-3Z";
+	ctx.globalAlpha = daylight ? 0.34 : 1;
 	fill(ctx, edge, paperInk("#665748"));
 	fill(ctx, "M795 420l4-5 8-2 7.4.4 2.4 3-4 4-7.8-1-4 4Z", paperInk("#988471"));
 	fill(
@@ -337,6 +384,7 @@ function drawRockSketch(ctx: CanvasRenderingContext2D) {
 		paperInk("#655345"),
 	);
 	fill(ctx, "M799 415l6-1 3 1-4 3-3 1-4-1Z", paperInk("#a28e78"));
+	ctx.globalAlpha = 1;
 	stroke(ctx, edge, paperInk("#493b31"), 1);
 	stroke(
 		ctx,
@@ -460,11 +508,32 @@ export const notebookLayers = [
 	{ id: "pages", label: "Stacked page edges", draw: drawPageEdges },
 	{ id: "notebook-spine", label: "Notebook spine", draw: drawNotebookSpine },
 	{ id: "ink", label: "Handwritten notes", draw: drawHandwrittenNotes },
-	{ id: "mesa-sketch", label: "Mesa sketch", draw: drawMesaSketch },
+	{
+		id: "mesa-sketch",
+		label: "Mesa sketch",
+		draw: (ctx: CanvasRenderingContext2D) => drawMesaSketch(ctx),
+	},
 	{ id: "route-sketch", label: "Route sketch", draw: drawRouteSketch },
 	{ id: "plant-sketch", label: "Plant sketch", draw: drawPlantSketch },
-	{ id: "rock-sketch", label: "Rock sketch", draw: drawRockSketch },
+	{
+		id: "rock-sketch",
+		label: "Rock sketch",
+		draw: (ctx: CanvasRenderingContext2D) => drawRockSketch(ctx),
+	},
 	{ id: "page-corner", label: "Loose page corner", draw: drawPageCorner },
 	{ id: "pencil-shadow", label: "Pencil shadow", draw: drawPencilShadow },
 	...pencilLayers,
 ] as const;
+
+export const daylightNotebookDetails = new Map<
+	string,
+	(ctx: CanvasRenderingContext2D, dither: boolean, seconds?: number) => void
+>([
+	[
+		"page-corner",
+		(ctx, dither, seconds) =>
+			drawPageCorner(ctx, seconds, dither ? "dither" : "flat"),
+	],
+	["mesa-sketch", (ctx) => drawMesaSketch(ctx, true)],
+	["rock-sketch", (ctx) => drawRockSketch(ctx, true)],
+]);

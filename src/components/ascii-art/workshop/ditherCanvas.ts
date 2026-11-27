@@ -1,5 +1,6 @@
 import {
 	desertDitherColumns,
+	desertDotSize,
 	ditherGlyphs,
 	glyphSize,
 	glyphSizeSteps,
@@ -53,8 +54,10 @@ type DitherDetail = DitherBounds & {
 
 export type DitherPaint = {
 	style: DitherStyle;
+	daylight: boolean;
 	palette?: ReturnType<typeof readDesertInks>;
 	detail?: readonly DitherDetail[];
+	paperFaces?: readonly string[];
 };
 
 export function readDesertInks(element: HTMLElement, dark: boolean) {
@@ -79,7 +82,7 @@ export function readDesertInks(element: HTMLElement, dark: boolean) {
 		return Array.from({ length: 256 }, (_, ink) => {
 			const gain = dark
 				? Math.min(1.4, 0.52 + ink / 150)
-				: Math.max(0.47, 0.97 - ink / 430);
+				: Math.max(0.45, 0.78 - ink / 620);
 			return `rgb(${base
 				.map((channel) => Math.round(Math.min(255, channel * gain)))
 				.join(" ")})`;
@@ -89,13 +92,11 @@ export function readDesertInks(element: HTMLElement, dark: boolean) {
 		wood: materialShades("wood"),
 		fabric: materialShades("fabric"),
 		metal: materialShades("metal"),
-		paper: materialShades("paper"),
+		paper: dark ? materialShades("paper") : Array<string>(256).fill("#111"),
 		hemp: materialShades("hemp"),
 		flame: materialShades("flame"),
 		sand: Array.from({ length: 256 }, (_, ink) => {
-			const level = dark
-				? Math.min(5, 1.2 + ink / 45)
-				: Math.max(0, 3.8 - ink / 52);
+			const level = dark ? Math.min(5, 1.2 + ink / 45) : 1;
 			const left = Math.floor(level);
 			const blend = level - left;
 			const right = Math.min(left + 1, sand.length - 1);
@@ -121,7 +122,14 @@ export function ditherCanvas(
 	const { width, height } = source.canvas;
 	const frame = source.getImageData(0, 0, width, height);
 	ctx.clearRect(0, 0, width, height);
-	ctx.fillStyle = "#efe9da";
+	if (paint.paperFaces?.length) {
+		ctx.save();
+		ctx.translate(-origin.x, -origin.y);
+		ctx.fillStyle = "#fcfbf7";
+		for (const face of paint.paperFaces) ctx.fill(new Path2D(face));
+		ctx.restore();
+	}
+	ctx.fillStyle = paint.daylight ? "#000" : "#efe9da";
 
 	const bounds = {
 		left: origin.x,
@@ -180,13 +188,15 @@ export function ditherCanvas(
 function drawMarks(
 	ctx: CanvasRenderingContext2D,
 	frame: ImageData,
-	{ style, palette }: DitherPaint,
+	{ style, daylight, palette }: DitherPaint,
 	origin: { x: number; y: number },
 	bounds: DitherBounds,
 	columnPitch: number,
 ) {
 	const { width } = frame;
-	const softHighlights = style === "soft";
+	const softHighlights = !daylight && style === "soft";
+	const snapToPixels = daylight && !palette;
+	const scale = ctx.getTransform().a;
 	const rowPitch = columnPitch * rowPitchRatio;
 	const firstColumn = Math.max(0, Math.floor(bounds.left / columnPitch));
 	const firstRow = Math.max(0, Math.floor(bounds.top / rowPitch));
@@ -200,7 +210,7 @@ function drawMarks(
 			const ink = sampleInk(frame, x, y);
 			if (!ink) continue;
 			const cell = sampleGlyphCell(column, row);
-			const intensity = Math.min(1, ink / 140);
+			const intensity = Math.min(1, ink / (daylight ? 72 : 140));
 			const size = glyphSize(intensity, cell.rank) / glyphSizeSteps;
 			if (!size) continue;
 			if (palette) {
@@ -214,11 +224,12 @@ function drawMarks(
 				ctx.fillStyle = palette[material][Math.round(ink)];
 			}
 			const highlight = Math.min(1, Math.max(0, (ink - 18) / 88));
-			const footprint = size * (1 + 0.52 * highlight);
-			const markWidth = columnPitch * 0.76 * 0.83 * footprint;
+			const footprint = size * (daylight ? 1 : 1 + 0.52 * highlight);
+			const aspect = daylight ? 1 : 0.83;
+			const markWidth = columnPitch * desertDotSize * aspect * footprint;
 			const markHeight = Math.min(
 				rowPitch * 0.98,
-				((columnPitch * 0.76) / 0.83) * footprint,
+				((columnPitch * desertDotSize) / aspect) * footprint,
 			);
 			const centerX = x + cell.scatterX * columnPitch;
 			const centerY = y + cell.scatterY * rowPitch;
@@ -235,15 +246,27 @@ function drawMarks(
 					rowPitch,
 				);
 			}
-			const alpha = Math.min(1, (72 + ink * (1.35 + 0.3 * highlight)) / 255);
+			const alpha = daylight
+				? 1
+				: Math.min(1, (72 + ink * (1.35 + 0.3 * highlight)) / 255);
 			ctx.globalAlpha = alpha * (1 - softness);
 			for (const [left, top, spanX, spanY] of ditherGlyphs[cell.glyph]) {
-				ctx.fillRect(
-					centerX + (left - 0.5) * markWidth,
-					centerY + (top - 0.5) * markHeight,
-					spanX * markWidth,
-					spanY * markHeight,
-				);
+				const x = centerX + (left - 0.5) * markWidth;
+				const y = centerY + (top - 0.5) * markHeight;
+				const width = spanX * markWidth;
+				const height = spanY * markHeight;
+				if (snapToPixels) {
+					const leftPixel = Math.round(x * scale);
+					const topPixel = Math.round(y * scale);
+					ctx.fillRect(
+						leftPixel / scale,
+						topPixel / scale,
+						(Math.round((x + width) * scale) - leftPixel) / scale,
+						(Math.round((y + height) * scale) - topPixel) / scale,
+					);
+				} else {
+					ctx.fillRect(x, y, width, height);
+				}
 			}
 		}
 	}

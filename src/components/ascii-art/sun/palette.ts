@@ -19,8 +19,8 @@ const DARK_GRAY_SUN_PALETTE: SunPalette = {
 };
 
 export const DEFAULT_SUN_PALETTES: SunPalettes = {
-	lightColor: { lowHeat: "#ffd166", highHeat: "#f08a24" },
-	lightMonochrome: { lowHeat: "#d9d9d9", highHeat: "#9b9b9b" },
+	lightColor: { lowHeat: "#d99228", highHeat: "#a64d1a" },
+	lightMonochrome: { lowHeat: "#808080", highHeat: "#3f3f3f" },
 	darkColor: { ...DARK_GRAY_SUN_PALETTE },
 	darkMonochrome: { ...DARK_GRAY_SUN_PALETTE },
 };
@@ -28,8 +28,8 @@ export const DEFAULT_SUN_PALETTES: SunPalettes = {
 export type SunTrailColors = Record<SunPaletteVariant, string>;
 
 export const DEFAULT_SUN_TRAIL_COLORS: SunTrailColors = {
-	lightColor: "#f59e0b",
-	lightMonochrome: "#c4c4c4",
+	lightColor: "#b36a17",
+	lightMonochrome: "#737373",
 	darkColor: "#e6e6e6",
 	darkMonochrome: "#e6e6e6",
 };

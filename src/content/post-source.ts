@@ -43,6 +43,7 @@ export function postSource(): Plugin {
 
 			const title = property(properties, "title");
 			const cover = property(properties, "cover");
+			const coverLight = property(properties, "coverLight");
 			const summary = property(properties, "summary");
 
 			if (typeof title !== "string" || !title.trim()) {
@@ -53,6 +54,7 @@ export function postSource(): Plugin {
 				title,
 				draft,
 				cover: typeof cover === "string" ? cover : undefined,
+				coverLight: typeof coverLight === "string" ? coverLight : undefined,
 				summary: typeof summary === "string" ? summary : undefined,
 				body: source.slice(frontmatter?.[0].length ?? 0),
 			})}`;

@@ -87,9 +87,9 @@ function pickDesertQuote() {
   return desertQuotes[Math.floor(Math.random() * desertQuotes.length)]!;
 }
 
-function LatestPosts({ className = "" }: { className?: string }) {
+function LatestPosts() {
   return (
-    <section className={`py-4 ${className}`} aria-labelledby="latest-posts">
+    <section className="py-4" aria-labelledby="latest-posts">
       <h2
         id="latest-posts"
         className="mt-2 mb-4 text-[1.25rem] font-semibold leading-[1.2]"
@@ -169,13 +169,33 @@ function Home() {
     />
   );
 
-  if (playgroundOpen) {
-    return (
-      <main className={desertMain}>
-        <div
-          className={`${desertRow} flex-1 min-[56rem]:grid-rows-[minmax(clamp(0px,calc(100svh-19rem),min(34rem,36vw)),auto)_auto]`}
+  return (
+    <main className={`${desertMain} relative`}>
+      <DesertPageIntro
+        title="sideDesert"
+        description="A quiet corner on the internet. Notes, ideas, code and curiosity from the side of the desert."
+        landscape={landscape}
+        asideInert={playgroundOpen}
+      >
+        <blockquote className="mt-3.5 italic">
+          “Wide horizons, deeper thoughts.”
+        </blockquote>
+      </DesertPageIntro>
+
+      <div className={`${desertRow} flex-1`}>
+        <LatestPosts />
+        <button
+          type="button"
+          onClick={() => setDesertQuote(pickDesertQuote())}
+          className={`${desertAside} flex w-full max-w-64 cursor-pointer items-start justify-start pt-2 pb-5 text-left min-[56rem]:max-w-none min-[56rem]:self-stretch min-[56rem]:pt-[1.625rem]`}
+          aria-label="Show another desert quote"
+          inert={playgroundOpen}
         >
-          {landscape}
+          <span className="block min-[56rem]:max-w-[20ch]">{desertQuote}</span>
+        </button>
+      </div>
+      {playgroundOpen && (
+        <div className={`${desertRow} pointer-events-none contents min-[56rem]:absolute min-[56rem]:inset-0 min-[56rem]:z-30 min-[56rem]:grid-rows-[minmax(0,1fr)]`}>
           <Playground
             terrainState={terrainState}
             terrainDispatch={terrainDispatch}
@@ -190,37 +210,10 @@ function Home() {
             onAudioToggle={audio.toggle}
             onAudioUpdate={audio.update}
             onClose={() => setPlaygroundOpen(false)}
-            className="max-sm:max-h-[70svh] min-[56rem]:sticky min-[56rem]:top-4 min-[56rem]:col-start-2 min-[56rem]:row-span-2 min-[56rem]:row-start-1 min-[56rem]:h-[calc(100svh-8rem)] min-[56rem]:max-h-[44rem]"
+            className="pointer-events-auto fixed inset-x-0 bottom-0 z-30 h-[min(45svh,26rem)] border-t border-(--rule) min-[56rem]:static min-[56rem]:col-start-2 min-[56rem]:h-full min-[56rem]:border-t-0 min-[56rem]:border-l"
           />
-          <LatestPosts className="min-[56rem]:col-start-1 min-[56rem]:row-start-2" />
         </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className={desertMain}>
-      <DesertPageIntro
-        title="sideDesert"
-        description="A quiet corner on the internet. Notes, ideas, code and curiosity from the side of the desert."
-        landscape={landscape}
-      >
-        <blockquote className="mt-3.5 italic">
-          “Wide horizons, deeper thoughts.”
-        </blockquote>
-      </DesertPageIntro>
-
-      <div className={`${desertRow} flex-1`}>
-        <LatestPosts />
-        <button
-          type="button"
-          onClick={() => setDesertQuote(pickDesertQuote())}
-          className={`${desertAside} flex w-full max-w-64 cursor-pointer items-start justify-start pt-2 pb-5 text-left min-[56rem]:max-w-none min-[56rem]:self-stretch min-[56rem]:pt-[1.625rem]`}
-          aria-label="Show another desert quote"
-        >
-          <span className="block min-[56rem]:max-w-[20ch]">{desertQuote}</span>
-        </button>
-      </div>
+      )}
     </main>
   );
 }

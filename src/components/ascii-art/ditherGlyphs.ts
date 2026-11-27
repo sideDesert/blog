@@ -28,6 +28,7 @@ export const ditherGlyphs = [
 
 export const glyphSizeSteps = 16;
 export const desertDitherColumns = 740;
+export const desertDotSize = 0.72;
 export const rowPitchRatio = 1.33;
 export function glyphSize(coverage: number, rank: number) {
 	const chance = Math.sqrt(coverage);

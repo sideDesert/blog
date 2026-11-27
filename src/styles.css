@@ -5,14 +5,13 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --desert-art-width: clamp(28rem, calc((100svh - 26rem) * 2), 60rem);
+  --desert-art-height: clamp(14rem, calc(100svh - 26rem), 30rem);
   --desert-sand-shadow: #3a2b22;
   --desert-sand-deep: #68432f;
   --desert-sand-muted: #8e6043;
   --desert-sand: #b17e57;
   --desert-sand-rim: #d0a077;
   --desert-sand-highlight: #f0d3af;
-  --desert-sand-light: #caa97c;
   --desert-grass: #30582a;
   --desert-wood: #b68270;
   --desert-fabric: #739fa2;
@@ -55,6 +54,22 @@
   --destructive: #f97066;
   --ring: var(--foreground);
   --input: var(--border);
+}
+
+.desert-texture {
+  filter: brightness(0);
+}
+
+.desert-texture[data-colored] {
+  filter: brightness(0.47) sepia(0.75) saturate(1.9) hue-rotate(-8deg);
+}
+
+.dark .desert-texture {
+  filter: none;
+}
+
+.dark .desert-texture[data-colored] {
+  filter: sepia(0.75) saturate(1.9) hue-rotate(-8deg);
 }
 
 @theme {
@@ -139,42 +154,6 @@ body > main {
     overflow-y: auto;
     scrollbar-width: thin;
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  main {
-    view-transition-name: page-content;
-  }
-
-  ::view-transition-old(root),
-  ::view-transition-new(root),
-  ::view-transition-group(page-content) {
-    animation: none;
-  }
-
-  ::view-transition-old(page-content) {
-    animation: 150ms ease-out both page-fade-out;
-  }
-
-  ::view-transition-new(page-content) {
-    animation: 150ms ease-out both page-fade-in;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(root),
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
-  }
-}
-
-@keyframes page-fade-out {
-  to { opacity: 0; }
-}
-
-@keyframes page-fade-in {
-  from { opacity: 0; }
 }
 
 nav a[aria-current="page"] {

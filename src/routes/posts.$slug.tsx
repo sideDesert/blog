@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "#/components/ui/button";
+import { PostCover } from "#/components/ui/PostCover";
 import { getLinkedPost, getPost, markdownSlug, postImage } from "#/lib/posts";
 import "./post.css";
 
@@ -80,13 +81,11 @@ function Post() {
 					{post.summary && (
 						<p className="mt-4 text-muted-foreground">{post.summary}</p>
 					)}
-					{post.cover && (
-						<img
-							alt=""
-							className="mt-6 aspect-2/1 w-full max-w-xl border border-border object-cover"
-							src={post.cover}
-						/>
-					)}
+					<PostCover
+						cover={post.cover}
+						coverLight={post.coverLight}
+						className="mt-6 aspect-2/1 w-full max-w-xl border border-border object-cover"
+					/>
 				</header>
 				<div className="post-body mt-8">
 					<Markdown

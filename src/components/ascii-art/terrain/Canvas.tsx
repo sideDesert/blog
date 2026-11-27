@@ -36,7 +36,7 @@ export function TerrainCanvas({
 }: CanvasProps) {
 	const selected = config.shapes.find((shape) => shape.id === selectedId);
 	const gradientId = `${clipId}-ink`;
-	const lightInkClass = `dark:hidden ${color ? "fill-(--desert-sand-light)" : ""}`;
+	const lightInkClass = `dark:hidden ${color ? "fill-(--desert-sand-deep)" : ""}`;
 	const darkInkClass = color
 		? "hidden dark:block [--terrain-ink-0:var(--desert-sand-shadow)] [--terrain-ink-1:var(--desert-sand-deep)] [--terrain-ink-2:var(--desert-sand-muted)] [--terrain-ink-3:var(--desert-sand)] [--terrain-ink-4:var(--desert-sand-rim)] [--terrain-ink-5:var(--desert-sand-highlight)]"
 		: "hidden dark:block [--terrain-ink-0:var(--accent)] [--terrain-ink-1:var(--border)] [--terrain-ink-2:#767775] [--terrain-ink-3:#949493] [--terrain-ink-4:var(--muted-foreground)] [--terrain-ink-5:var(--foreground)]";

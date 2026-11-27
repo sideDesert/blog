@@ -80,15 +80,7 @@ export function SceneClouds({
 			className={`pointer-events-none absolute inset-x-0 top-0 opacity-60 ${clouds ? "h-full" : "h-[58%]"}`}
 			aria-hidden="true"
 		>
-			<DesertTexture
-				layer="sky"
-				clouds={clouds}
-				className={
-					color
-						? "filter-[sepia(0.75)_saturate(1.9)_hue-rotate(-8deg)]"
-						: "brightness-0 dark:brightness-100"
-				}
-			/>
+			<DesertTexture layer="sky" clouds={clouds} color={color} />
 		</div>
 	);
 }

@@ -172,11 +172,11 @@ function drawGround(context: CanvasRenderingContext2D, height: number) {
 
 export default function DesertTexture({
 	layer,
-	className,
+	color,
 	clouds,
 }: {
 	layer: "sky" | "ground";
-	className?: string;
+	color: boolean;
 	clouds?: readonly CloudPlacement[];
 }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -259,7 +259,8 @@ export default function DesertTexture({
 	return (
 		<canvas
 			ref={canvasRef}
-			className={`absolute inset-0 h-full w-full ${className ?? ""}`}
+			className="desert-texture absolute inset-0 h-full w-full"
+			data-colored={color || undefined}
 		/>
 	);
 }

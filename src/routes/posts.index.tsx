@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { WorkshopScene } from "#/components/ascii-art/workshop/WorkshopScene";
 import { DesertPageIntro } from "#/components/ui/DesertPageIntro";
+import { PostCover } from "#/components/ui/PostCover";
 import { desertMain } from "#/components/ui/desert-layout";
 import { posts } from "#/lib/posts";
 
@@ -28,14 +29,12 @@ function Posts() {
 								to="/posts/$slug"
 								params={{ slug: post.slug }}
 							>
-								{post.cover && (
-									<img
-										alt=""
-										className="aspect-2/1 w-full border-b border-border object-cover"
-										loading="lazy"
-										src={post.cover}
-									/>
-								)}
+								<PostCover
+									cover={post.cover}
+									coverLight={post.coverLight}
+									className="aspect-2/1 w-full border-b border-border object-cover"
+									loading="lazy"
+								/>
 								<div className="px-4 py-3">
 									<h2 className="text-lg font-semibold group-hover:underline">
 										{post.title}

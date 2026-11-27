@@ -30,14 +30,7 @@ export default function Ground({
 }) {
 	return (
 		<div className="absolute inset-x-0 bottom-0 h-[var(--ground-depth)]">
-			<DesertTexture
-				layer="ground"
-				className={
-					color
-						? "[filter:sepia(0.75)_saturate(1.9)_hue-rotate(-8deg)]"
-						: "brightness-0 dark:brightness-100"
-				}
-			/>
+			<DesertTexture layer="ground" color={color} />
 			{plants.map((plant) => (
 				<div
 					key={plant.x}

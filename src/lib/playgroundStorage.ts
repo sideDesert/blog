@@ -93,6 +93,16 @@ export function readSunPalettes(): SunPalettes {
 		if (!palette || typeof palette !== "object") continue;
 
 		const { lowHeat, highHeat } = palette as Record<string, unknown>;
+		if (
+			(variant === "lightColor" &&
+				lowHeat === "#ffd166" &&
+				highHeat === "#f08a24") ||
+			(variant === "lightMonochrome" &&
+				lowHeat === "#d9d9d9" &&
+				highHeat === "#9b9b9b")
+		) {
+			continue;
+		}
 		if (typeof lowHeat === "string" && HEX_COLOR.test(lowHeat)) {
 			palettes[variant].lowHeat = lowHeat;
 		}

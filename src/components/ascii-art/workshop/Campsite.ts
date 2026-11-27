@@ -259,6 +259,14 @@ function drawEmbers(ctx: CanvasRenderingContext2D, seconds = 0) {
 	}
 }
 
+export const campfireLightLayers = [
+	"tent-firelight",
+	"firelight",
+	"outer-flame",
+	"inner-flame",
+	"embers",
+] as const;
+
 export const campsiteLayers = [
 	{ id: "canyon-camp", label: "Canyon silhouette", draw: drawCanyon },
 	{ id: "canyon-faces", label: "Canyon stone faces", draw: drawCanyonFaces },

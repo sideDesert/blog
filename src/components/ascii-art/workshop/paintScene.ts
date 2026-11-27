@@ -5,6 +5,7 @@ import {
 	workshopWidth,
 } from "./ditherCanvas";
 import { towerSignalLayers } from "./RadioTower";
+import { campfireLightLayers } from "./Campsite";
 import type { WorkshopLayer, WorkshopSceneName } from "./scenes";
 import { awningFabricLayers } from "./Shop";
 
@@ -72,13 +73,7 @@ export const motionPatches = {
 	about: [
 		{
 			bounds: { x: 439, y: 319, width: 277, height: 118 },
-			moving: [
-				"tent-firelight",
-				"firelight",
-				"outer-flame",
-				"inner-flame",
-				"embers",
-			],
+			moving: campfireLightLayers,
 		},
 	],
 } satisfies Record<WorkshopSceneName, Patch[]>;

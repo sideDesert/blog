@@ -3,13 +3,13 @@ type PostSource = {
 	draft: boolean;
 	summary?: string;
 	cover?: string;
+	coverLight?: string;
 	body: string;
 };
 
-type Post = Omit<PostSource, "cover"> & {
+type Post = PostSource & {
 	slug: string;
 	file: string;
-	cover?: string;
 };
 
 const postSources = import.meta.glob<PostSource | null>(
@@ -69,12 +69,24 @@ for (const [path, source] of Object.entries(postSources)) {
 	}
 
 	const cover = source.cover && postImage(file, source.cover);
+	const coverLight = source.coverLight && postImage(file, source.coverLight);
 
-	if (source.cover && !cover && !source.draft) {
-		throw new Error(`Could not find cover ${source.cover} for ${path}`);
+	if (!source.draft) {
+		const missingCover =
+			(source.cover && !cover && source.cover) ||
+			(source.coverLight && !coverLight && source.coverLight);
+		if (missingCover) {
+			throw new Error(`Could not find cover ${missingCover} for ${path}`);
+		}
 	}
 
-	const post = { ...source, slug, file, cover: cover || undefined };
+	const post = {
+		...source,
+		slug,
+		file,
+		cover: cover || undefined,
+		coverLight: coverLight || undefined,
+	};
 	postsBySlug.set(slug, post);
 	postsByFile.set(path, post);
 }

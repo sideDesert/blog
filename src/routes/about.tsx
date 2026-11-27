@@ -42,10 +42,12 @@ function About() {
 							target="_blank"
 							rel="noreferrer"
 							aria-label={label}
-							className="inline-flex items-center gap-1.5 hover:text-muted-foreground [&_svg]:size-4"
+							className="group inline-flex items-center gap-1.5 hover:text-muted-foreground [&_svg]:size-4"
 						>
 							<Logo />
-							<span className="underline underline-offset-4">{label}</span>
+							<span className="underline-offset-4 group-hover:underline group-focus-visible:underline">
+								{label}
+							</span>
 							<span aria-hidden="true">↗</span>
 						</a>
 					))}
