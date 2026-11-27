@@ -1,3 +1,4 @@
+import { pageHead } from "#/lib/pageHead";
 import { createFileRoute } from "@tanstack/react-router";
 import { WorkshopScene } from "#/components/ascii-art/workshop/WorkshopScene";
 import { GitHubLogo, LinkedInLogo, XLogo } from "#/components/SocialIcons";
@@ -24,6 +25,12 @@ const socialLinks = [
 
 export const Route = createFileRoute("/about")({
 	component: About,
+	head: () =>
+		pageHead(
+			"/about",
+			"About | Siddarth Saha",
+			"Meet Siddarth Saha, a software engineer interested in databases, operating systems, and distributed systems.",
+		),
 });
 
 function About() {

@@ -21,10 +21,16 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "TanStack Start Starter",
+        title: "sideDesert | Siddarth Saha",
       },
     ],
     links: [
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "128x128",
+        href: `${import.meta.env.BASE_URL}favicon.png`,
+      },
       {
         rel: "stylesheet",
         href: appCss,

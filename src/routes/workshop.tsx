@@ -1,3 +1,4 @@
+import { pageHead } from "#/lib/pageHead";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import blogReference from "#/assets/workshop/blog-reference.webp";
@@ -14,7 +15,12 @@ import { desertMain } from "#/components/ui/desert-layout";
 
 export const Route = createFileRoute("/workshop")({
 	component: Workshop,
-	head: () => ({ meta: [{ title: "Workshop | sideDesert" }] }),
+	head: () =>
+		pageHead(
+			"/workshop",
+			"Workshop | sideDesert",
+			"Explore the layers behind sideDesert’s interactive desert landscapes.",
+		),
 });
 
 const referenceImages: Partial<Record<WorkshopSceneName, string>> = {

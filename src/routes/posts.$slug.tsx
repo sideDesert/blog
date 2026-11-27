@@ -3,6 +3,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "#/components/ui/button";
 import { PostCover } from "#/components/ui/PostCover";
+import { pageHead, siteDescription } from "#/lib/pageHead";
 import { getLinkedPost, getPost, markdownSlug, postImage } from "#/lib/posts";
 import "./post.css";
 
@@ -52,16 +53,15 @@ export const Route = createFileRoute("/posts/$slug")({
 
 		return post;
 	},
-	head: ({ loaderData }) => ({
-		meta: loaderData
-			? [
-					{ title: `${loaderData.title} | Siddarth Saha` },
-					...(loaderData.summary
-						? [{ name: "description", content: loaderData.summary }]
-						: []),
-				]
-			: [],
-	}),
+	head: ({ loaderData }) =>
+		loaderData
+			? pageHead(
+					`/posts/${encodeURIComponent(loaderData.slug)}`,
+					`${loaderData.title} | Siddarth Saha`,
+					loaderData.summary || siteDescription,
+					"article",
+				)
+			: {},
 	component: Post,
 });
 

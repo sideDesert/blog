@@ -1,3 +1,4 @@
+import { pageHead } from "#/lib/pageHead";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { type TouchEvent, useRef, useState } from "react";
@@ -12,7 +13,12 @@ import { desertMain } from "#/components/ui/desert-layout";
 
 export const Route = createFileRoute("/projects")({
 	component: Projects,
-	head: () => ({ meta: [{ title: "Projects | Siddarth Saha" }] }),
+	head: () =>
+		pageHead(
+			"/projects",
+			"Projects | Siddarth Saha",
+			"Explore projects by Siddarth Saha, including a database engine, a memory allocator, and a learning agent.",
+		),
 });
 
 const projects = [

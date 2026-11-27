@@ -1,3 +1,4 @@
+import { pageHead, siteDescription } from "#/lib/pageHead";
 import {
   desertAside,
   desertMain,
@@ -28,7 +29,10 @@ import {
 
 import { posts } from "#/lib/posts";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/")({
+  component: Home,
+  head: () => pageHead("/", "sideDesert | Siddarth Saha", siteDescription),
+});
 
 const desertQuotes = [
   "The desert teaches patience. Mostly because nothing happens.",

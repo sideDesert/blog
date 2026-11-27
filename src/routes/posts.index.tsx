@@ -1,3 +1,4 @@
+import { pageHead } from "#/lib/pageHead";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { WorkshopScene } from "#/components/ascii-art/workshop/WorkshopScene";
 import { DesertPageIntro } from "#/components/ui/DesertPageIntro";
@@ -7,7 +8,12 @@ import { posts } from "#/lib/posts";
 
 export const Route = createFileRoute("/posts/")({
 	component: Posts,
-	head: () => ({ meta: [{ title: "Blog | Siddarth Saha" }] }),
+	head: () =>
+		pageHead(
+			"/posts",
+			"Blog | Siddarth Saha",
+			"Read Siddarth Saha’s notes on databases, systems, and learning to build software from scratch.",
+		),
 });
 
 function Posts() {
