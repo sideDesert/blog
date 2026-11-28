@@ -117,6 +117,15 @@ const topRafter = rafter("M320 307l50-23 6-.8L562 313l-2 2-186-29-51 23Z");
 
 const roofLayers = timberLayers("Shop roof", [
 	[
+		"shop-roof-face",
+		"Weathered roof face",
+		shadedFace("M320 307l53-24 189 30-186-10Z", 283, 314, [
+			[0, woodInk("#958370")],
+			[0.48, woodInk("#706151")],
+			[1, woodInk("#463b30")],
+		]),
+	],
+	[
 		"shop-roof-soffit",
 		"Shade beneath the roof",
 		shadedFace("M378 286l176 28-6 5-164-4Z", 285, 319, [

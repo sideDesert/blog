@@ -4,7 +4,7 @@ import type {
 	Shape,
 	TerrainConfig,
 } from "./model";
-import { baseVerticalScale } from "./model";
+import { baseVerticalScale, defaultTerrainRenderSettings } from "./model";
 import { createDotPaths, type SurfaceSeam, terrainFrame } from "./shading";
 
 export const samples = Array.from({ length: 1001 }, (_, index) => index / 10);
@@ -94,6 +94,39 @@ function seamEntries(shapes: Shape[]): SeamEntry[] {
 	});
 }
 
+function terrainSilhouette(ridgeAt: (x: number) => number) {
+	const points = samples.map((x) => `${x},${ridgeAt(x)}`).join(" ");
+	return `0,${terrainFrame.bottom} ${points} ${terrainFrame.width},${terrainFrame.bottom}`;
+}
+
+export const terrainBand = { top: 10, height: 84 };
+
+type RidgePoint = readonly [number, number];
+
+export function createRidgeArtwork(
+	ridge: readonly [RidgePoint, ...RidgePoint[]],
+) {
+	const lastX = (ridge.at(-1) ?? ridge[0])[0];
+	const ridgeAt = (x: number) => {
+		const position = Math.min(lastX, Math.max(ridge[0][0], x * 10));
+		const right = ridge.findIndex(([ridgeX]) => ridgeX >= position);
+		const [rightX, rightY] = ridge[right];
+		const [leftX, leftY] = ridge[Math.max(0, right - 1)];
+		const fraction =
+			rightX === leftX ? 0 : (position - leftX) / (rightX - leftX);
+		const y = leftY + (rightY - leftY) * fraction;
+		return (
+			terrainFrame.top +
+			((y / 5 - terrainBand.top) / terrainBand.height) * terrainFrame.height
+		);
+	};
+	const { gridSize, dotSize } = defaultTerrainRenderSettings;
+	return {
+		silhouette: terrainSilhouette(ridgeAt),
+		dotPaths: createDotPaths(ridgeAt, [], [], [], 1, gridSize, dotSize),
+	};
+}
+
 export function createScene(
 	config: TerrainConfig,
 	render: RenderSettings,
@@ -103,8 +136,7 @@ export function createScene(
 	const toY = (height: number) =>
 		terrainFrame.bottom - height * config.verticalScale;
 	const ridgeAt = (x: number) => toY(terrain(x));
-	const points = samples.map((x) => `${x},${ridgeAt(x)}`).join(" ");
-	const silhouette = `0,${terrainFrame.bottom} ${points} ${terrainFrame.width},${terrainFrame.bottom}`;
+	const silhouette = terrainSilhouette(ridgeAt);
 	const basePoints = samples
 		.map((x) => `${x},${toY(evaluateTerrain(x, config.shapes))}`)
 		.join(" ");

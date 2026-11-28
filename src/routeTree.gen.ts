@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as PostsRouteImport } from './routes/posts'
 import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as StudioRouteImport } from './routes/studio'
 import { Route as WorkshopRouteImport } from './routes/workshop'
 import { Route as PostsIndexRouteImport } from './routes/posts.index'
 import { Route as PostsSlugRouteImport } from './routes/posts.$slug'
@@ -37,6 +38,11 @@ const ProjectsRoute = ProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudioRoute = StudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkshopRoute = WorkshopRouteImport.update({
   id: '/workshop',
   path: '/workshop',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/posts': typeof PostsRouteWithChildren
   '/projects': typeof ProjectsRoute
+  '/studio': typeof StudioRoute
   '/workshop': typeof WorkshopRoute
   '/posts/$slug': typeof PostsSlugRoute
   '/posts/': typeof PostsIndexRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/projects': typeof ProjectsRoute
+  '/studio': typeof StudioRoute
   '/workshop': typeof WorkshopRoute
   '/posts/$slug': typeof PostsSlugRoute
   '/posts': typeof PostsIndexRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/posts': typeof PostsRouteWithChildren
   '/projects': typeof ProjectsRoute
+  '/studio': typeof StudioRoute
   '/workshop': typeof WorkshopRoute
   '/posts/$slug': typeof PostsSlugRoute
   '/posts/': typeof PostsIndexRoute
@@ -87,17 +96,26 @@ export interface FileRouteTypes {
     | '/about'
     | '/posts'
     | '/projects'
+    | '/studio'
     | '/workshop'
     | '/posts/$slug'
     | '/posts/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/projects' | '/workshop' | '/posts/$slug' | '/posts'
+  to:
+    | '/'
+    | '/about'
+    | '/projects'
+    | '/studio'
+    | '/workshop'
+    | '/posts/$slug'
+    | '/posts'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/posts'
     | '/projects'
+    | '/studio'
     | '/workshop'
     | '/posts/$slug'
     | '/posts/'
@@ -108,6 +126,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   PostsRoute: typeof PostsRouteWithChildren
   ProjectsRoute: typeof ProjectsRoute
+  StudioRoute: typeof StudioRoute
   WorkshopRoute: typeof WorkshopRoute
 }
 
@@ -139,6 +158,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/studio': {
+      id: '/studio'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/workshop': {
@@ -182,6 +208,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   PostsRoute: PostsRouteWithChildren,
   ProjectsRoute: ProjectsRoute,
+  StudioRoute: StudioRoute,
   WorkshopRoute: WorkshopRoute,
 }
 export const routeTree = rootRouteImport

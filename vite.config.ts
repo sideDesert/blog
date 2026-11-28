@@ -26,6 +26,7 @@ const config = defineConfig({
         enabled: Boolean(pagesBase),
         autoStaticPathsDiscovery: false,
         failOnError: true,
+        filter: ({ path }) => !path.startsWith(`${base}assets/`) && !/[?#]/.test(path),
       },
     }),
     viteReact(),

@@ -1,81 +1,38 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useAppearance } from "#/lib/appearance";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { afterDesertPaint } from "../afterDesertPaint";
+import { DesertCelestial } from "../DesertCelestial";
+import DesertTexture from "../DesertTexture";
 import { NightStars } from "../NightStars";
-import { useDesertColor } from "../useDesertColor";
-import { useDesertTheme } from "../useDesertTheme";
-import { campfireLightLayers } from "./Campsite";
+import { TerrainArtwork } from "../terrain/Canvas";
+import { createRidgeArtwork, terrainBand } from "../terrain/geometry";
+import { useDesertMotion } from "../useDesertMotion";
 import {
 	type DitherPaint,
 	readDesertInks,
+	readMonochromeNightInks,
 	workshopHeight,
 	workshopWidth,
 } from "./ditherCanvas";
 import { DustGlyphs, settleDust, stirDust } from "./DustGlyphs";
-import { fieldNotesDither } from "./FieldNotes";
-import {
-	daylightNotebookDetails,
-	drawDaylightPage,
-	notebookPaperFaces,
-} from "./FieldNotesNotebook";
-import {
-	beaconPatch,
-	createPatch,
-	lampLayers,
-	lampPatch,
-	motionPatches,
-	paintWorkshop,
-} from "./paintScene";
-import {
-	radioTowerDither,
-	towerAntenna,
-	towerSignalLayers,
-} from "./RadioTower";
-import { SceneCelestial, SceneClouds, ScenePlants } from "./SceneScenery";
-import { scenes, type WorkshopLayer, type WorkshopSceneName } from "./scenes";
+import { createPatch, paintWorkshop } from "./paintScene";
+import type { CanvasLayer } from "./sceneLayer";
+import { SceneClouds, ScenePlants } from "./SceneScenery";
+import type { Scene } from "./scenes";
 import { ShootingStar } from "./ShootingStar";
 import "./workshop-motion.css";
 
 const lampFlicker = [0.28, 0.82, 0.48, 1, 0.72, 1];
 
-const lampRimDetail = "M453 337q17-2.5 38-.5l-1 4.5q-18 2-36 0Z";
-const benchHardwareDetail = "M402 367H427V382H402ZM426 392H452V412H426Z";
-
-const projectsDither = [
-	...radioTowerDither,
-	{
-		path: `M381 323H530V403H559V423H498V413H423V406H381Z ${lampRimDetail} ${benchHardwareDetail}`,
-		left: 381,
-		top: 323,
-		right: 559,
-		bottom: 423,
-	},
-	{
-		path: benchHardwareDetail,
-		left: 402,
-		top: 367,
-		right: 452,
-		bottom: 412,
-		pitchScale: 0.63,
-		style: "fine",
-	},
-	{
-		path: lampRimDetail,
-		left: 453,
-		top: 334,
-		right: 491,
-		bottom: 343,
-		pitchScale: 0.71,
-		style: "fine",
-	},
-	{ path: "M337 338h41v68h-41Z", left: 337, top: 338, right: 378, bottom: 406 },
-] as const;
-
 export function WorkshopScene({
-	scene = "projects",
+	scene,
 	hidden,
+	isolated,
 	dither = true,
 }: {
-	scene?: WorkshopSceneName;
-	hidden?: ReadonlySet<WorkshopLayer>;
+	scene: Scene;
+	hidden?: ReadonlySet<string>;
+	isolated?: string;
 	dither?: boolean;
 }) {
 	const canvas = useRef<HTMLCanvasElement>(null);
@@ -83,24 +40,39 @@ export function WorkshopScene({
 		undefined,
 	);
 	const beaconTimer = useRef<number | undefined>(undefined);
-	const { colorEnabled, toggleColor } = useDesertColor();
-	const theme = useDesertTheme();
+	const { theme, colorEnabled, toggleColor } = useAppearance();
 	const daylight = theme === "light";
-	const [motion, setMotion] = useState(false);
+	const motion = useDesertMotion();
 	const [displayScale, setDisplayScale] = useState(1);
 	const rasterScale = dither ? displayScale : 1;
-	const { layers, plants, dust, label, celestial, stars, clouds, ditherStyle } =
-		scenes[scene];
-	const visibleClouds = useMemo(() => {
-		const visible = clouds?.filter(({ id }) => !hidden?.has(id));
-		return visible?.length === clouds?.length ? clouds : visible;
-	}, [clouds, hidden]);
-	const hasTower =
-		scene === "projects" &&
-		!hidden?.has(towerAntenna) &&
-		!hidden?.has(towerSignalLayers[0]);
-	const visibleDust = dust.filter(({ id }) => !hidden?.has(id));
-	const hasDust = visibleDust.length > 0;
+	const visibleLayers = useMemo(
+		() =>
+			scene.layers.filter((layer) =>
+				isolated === undefined ? !hidden?.has(layer.id) : layer.id === isolated,
+			),
+		[scene, hidden, isolated],
+	);
+	const ridge = visibleLayers.find((layer) => layer.kind === "ridge")?.ridge;
+	const publicTerrain = useMemo(
+		() => ridge && createRidgeArtwork(ridge),
+		[ridge],
+	);
+	const clouds = useMemo(
+		() => visibleLayers.filter((layer) => layer.kind === "cloud"),
+		[visibleLayers],
+	);
+	const plants = visibleLayers.filter((layer) => layer.kind === "plant");
+	const dust = visibleLayers.filter((layer) => layer.kind === "dust");
+	const beaconLayer = visibleLayers.find(
+		(layer) =>
+			layer.kind === "paint" &&
+			layer.beacon &&
+			visibleLayers.some(({ id }) => id === layer.beacon?.requires),
+	);
+	const beaconRegion =
+		beaconLayer?.kind === "paint"
+			? beaconLayer.motion?.find(({ trigger }) => trigger === "beacon")
+			: undefined;
 
 	useEffect(() => {
 		const element = canvas.current;
@@ -120,157 +92,159 @@ export function WorkshopScene({
 	}, []);
 
 	useEffect(() => {
-		const preference = window.matchMedia(
-			"(prefers-reduced-motion: no-preference)",
-		);
-		const sync = () => setMotion(preference.matches);
-		sync();
-		preference.addEventListener("change", sync);
-		return () => preference.removeEventListener("change", sync);
-	}, []);
-
-	useEffect(() => {
 		const ctx = canvas.current?.getContext("2d", { willReadFrequently: true });
 		if (!ctx) return;
 		ctx.setTransform(rasterScale, 0, 0, rasterScale, 0, 0);
-		const paperFaces: string[] = [];
-		const visibleLayers = layers.flatMap((layer) => {
-			if (hidden?.has(layer.id)) return [];
-			if (!daylight) return [layer];
-			if (
-				lampLayers.some((id) => id === layer.id) ||
-				campfireLightLayers.some((id) => id === layer.id) ||
-				layer.id === "notebook-paper-grain"
-			)
-				return [];
-			const detail = daylightNotebookDetails.get(layer.id);
-			if (detail) {
-				return [
-					{
-						...layer,
-						draw: (context: CanvasRenderingContext2D, seconds?: number) =>
-							detail(context, dither, seconds),
-					},
-				];
-			}
-			const face = notebookPaperFaces.get(layer.id);
-			if (!face) return [layer];
-			paperFaces.push(face);
-			return [
-				{
-					...layer,
-					draw: (context: CanvasRenderingContext2D) =>
-						drawDaylightPage(context, face, dither),
-				},
-			];
-		});
-		const paint: DitherPaint | undefined = dither
+		const canvasLayers = visibleLayers
+			.filter((layer) => layer.kind === "paint")
+			.filter((layer) => !(daylight && layer.nightOnly));
+
+		const ditherPaint: DitherPaint | undefined = dither
 			? {
-					style: ditherStyle,
 					daylight,
-					paperFaces,
-					palette: colorEnabled
-						? readDesertInks(ctx.canvas, theme === "dark")
+					paperFaces: daylight
+						? canvasLayers.flatMap(({ paperFace }) =>
+								paperFace ? [paperFace] : [],
+							)
 						: undefined,
+					palette: colorEnabled
+						? readDesertInks(ctx.canvas, !daylight)
+						: undefined,
+					nightInks:
+						!daylight && !colorEnabled
+							? readMonochromeNightInks(ctx.canvas)
+							: undefined,
 					detail:
-						scene === "blog"
-							? fieldNotesDither(visibleLayers.map(({ id }) => id))
-							: scene === "projects"
-								? projectsDither
-								: undefined,
+						scene.detail === "layers"
+							? [
+									...new Set(
+										canvasLayers.flatMap(({ detail }) =>
+											detail ? [detail] : [],
+										),
+									),
+								].sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
+							: scene.detail,
 				}
 			: undefined;
-		paintWorkshop(ctx, visibleLayers, paint);
+		const paint = { daylight, dither: ditherPaint };
+		paintWorkshop(ctx, canvasLayers, paint);
 
-		const beacon = hasTower
-			? createPatch(ctx, visibleLayers, beaconPatch, paint)
-			: undefined;
-		if (beacon) {
-			const { x, y, width, height } = beaconPatch.bounds;
-			const idle = ctx.getImageData(
-				x * rasterScale,
-				y * rasterScale,
-				width * rasterScale,
-				height * rasterScale,
-			);
-			drawBeacon.current = (brightness) => {
-				if (brightness === 1)
-					ctx.putImageData(idle, x * rasterScale, y * rasterScale);
-				else beacon(() => brightness);
+		const regions = [
+			...new Set(canvasLayers.flatMap(({ motion }) => motion ?? [])),
+		];
+		if (beaconRegion) {
+			const beacon = createPatch(ctx, canvasLayers, beaconRegion, paint);
+			if (beacon) {
+				const { x, y, width, height } = beaconRegion;
+				const idle = ctx.getImageData(
+					x * rasterScale,
+					y * rasterScale,
+					width * rasterScale,
+					height * rasterScale,
+				);
+				drawBeacon.current = (brightness) => {
+					if (brightness === 1)
+						ctx.putImageData(idle, x * rasterScale, y * rasterScale);
+					else beacon(() => brightness);
+				};
+			}
+		}
+
+		const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+		function startMotion() {
+			if (!ctx) return;
+			const patches = regions
+				.filter(({ trigger }) => trigger === "frame")
+				.map((region) => createPatch(ctx, canvasLayers, region, paint))
+				.filter((patch) => patch !== undefined);
+			const lampRegion = regions.find(({ trigger }) => trigger === "flicker");
+			const lamp =
+				lampRegion &&
+				canvasLayers.some(
+					({ brightness, motion }) =>
+						brightness && motion?.includes(lampRegion),
+				)
+					? createPatch(ctx, canvasLayers, lampRegion, paint)
+					: undefined;
+
+			let frameId: number | undefined;
+			let lastPaint: number | undefined;
+			let seconds = 0;
+			let flickerAt = 5 + Math.random() * 2;
+			let flickerStarted = -Infinity;
+			let brightness = 1;
+			const amountFor = (layer: CanvasLayer) =>
+				layer.brightness ? brightness : seconds;
+			// Use the same compositing path for the first and subsequent steady frames.
+			lamp?.(amountFor);
+
+			function animate(timestamp: number) {
+				lastPaint ??= timestamp;
+				const elapsed = timestamp - lastPaint;
+				if (elapsed >= 1000 / 24) {
+					seconds += elapsed / 1000;
+					if (lamp && seconds >= flickerAt) {
+						flickerStarted = seconds;
+						flickerAt = seconds + 5 + Math.random() * 2;
+					}
+					const flickerFrame = Math.floor((seconds - flickerStarted) / 0.075);
+					const previousBrightness = brightness;
+					brightness = lampFlicker[flickerFrame] ?? 1;
+					for (const patch of patches) patch(amountFor);
+					if (brightness !== previousBrightness) lamp?.(amountFor);
+					lastPaint = timestamp;
+				}
+				frameId = requestAnimationFrame(animate);
+			}
+
+			const visibility =
+				patches.length > 0 || lamp
+					? new IntersectionObserver(([entry]) => {
+							if (entry?.isIntersecting) {
+								frameId ??= requestAnimationFrame(animate);
+							} else if (frameId !== undefined) {
+								cancelAnimationFrame(frameId);
+								frameId = undefined;
+								lastPaint = undefined;
+							}
+						})
+					: undefined;
+			visibility?.observe(ctx.canvas);
+			return () => {
+				visibility?.disconnect();
+				if (frameId !== undefined) cancelAnimationFrame(frameId);
 			};
 		}
 
-		const patches = motion
-			? motionPatches[scene]
-					.map((patch) => createPatch(ctx, visibleLayers, patch, paint))
-					.filter((patch) => patch !== undefined)
-			: [];
-		const lamp =
-			motion &&
-			scene === "projects" &&
-			visibleLayers.some(({ id }) => lampLayers.some((layer) => id === layer))
-				? createPatch(ctx, visibleLayers, lampPatch, paint)
-				: undefined;
-		let frameId: number | undefined;
-		let lastPaint: number | undefined;
-		let seconds = 0;
-		let flickerAt = 5 + Math.random() * 2;
-		let flickerStarted = -Infinity;
-		let brightness = 1;
-		const amountFor = (layer: WorkshopLayer) =>
-			lampLayers.some((id) => id === layer) ? brightness : seconds;
-		// Use the same compositing path for the first and subsequent steady frames.
-		lamp?.(amountFor);
-
-		function animate(timestamp: number) {
-			lastPaint ??= timestamp;
-			const elapsed = timestamp - lastPaint;
-			if (elapsed >= 1000 / 24) {
-				seconds += elapsed / 1000;
-				if (lamp && seconds >= flickerAt) {
-					flickerStarted = seconds;
-					flickerAt = seconds + 5 + Math.random() * 2;
-				}
-				const flickerFrame = Math.floor((seconds - flickerStarted) / 0.075);
-				const previousBrightness = brightness;
-				brightness = lampFlicker[flickerFrame] ?? 1;
-				for (const patch of patches) patch(amountFor);
-				if (brightness !== previousBrightness) lamp?.(amountFor);
-				lastPaint = timestamp;
+		let stopMotion: (() => void) | undefined;
+		let cancelStart: (() => void) | undefined;
+		const syncMotion = () => {
+			cancelStart?.();
+			stopMotion?.();
+			stopMotion = undefined;
+			if (!preference.matches) {
+				cancelStart = afterDesertPaint(() => {
+					stopMotion = startMotion();
+				});
 			}
-			frameId = requestAnimationFrame(animate);
-		}
-
-		const visibility =
-			patches.length > 0 || lamp
-				? new IntersectionObserver(([entry]) => {
-						if (entry?.isIntersecting) {
-							frameId ??= requestAnimationFrame(animate);
-						} else if (frameId !== undefined) {
-							cancelAnimationFrame(frameId);
-							frameId = undefined;
-							lastPaint = undefined;
-						}
-					})
-				: undefined;
-		visibility?.observe(ctx.canvas);
+		};
+		syncMotion();
+		preference.addEventListener("change", syncMotion);
 		return () => {
-			visibility?.disconnect();
-			if (frameId !== undefined) cancelAnimationFrame(frameId);
+			cancelStart?.();
+			stopMotion?.();
+			preference.removeEventListener("change", syncMotion);
 			window.clearTimeout(beaconTimer.current);
 			drawBeacon.current = undefined;
 		};
 	}, [
-		layers,
-		hidden,
+		visibleLayers,
 		dither,
-		ditherStyle,
 		colorEnabled,
-		theme,
 		daylight,
 		scene,
-		motion,
-		hasTower,
+		beaconRegion,
 		rasterScale,
 	]);
 
@@ -303,45 +277,109 @@ export function WorkshopScene({
 		<div
 			className="workshop-scene @container relative self-start overflow-hidden"
 			data-color={colorEnabled}
-			onPointerMove={motion && hasDust ? stirDust : undefined}
-			onPointerLeave={hasDust ? settleDust : undefined}
-			onPointerCancel={hasDust ? settleDust : undefined}
+			data-desert-motion={motion}
+			onPointerMove={motion && dust.length > 0 ? stirDust : undefined}
+			onPointerLeave={dust.length > 0 ? settleDust : undefined}
+			onPointerCancel={dust.length > 0 ? settleDust : undefined}
 		>
-			<canvas
-				ref={canvas}
-				width={workshopWidth * rasterScale}
-				height={workshopHeight * rasterScale}
-				role="img"
-				aria-label={
-					daylight && scene === "about"
-						? "A tent in a sunny desert canyon"
-						: label
+			{scene.layers.map((layer, index) => {
+				// Ordered canvas layers share one raster surface, even when all are hidden.
+				if (layer.kind === "paint") {
+					return scene.layers[index - 1]?.kind !== "paint" ? (
+						<canvas
+							ref={canvas}
+							width={workshopWidth * rasterScale}
+							height={workshopHeight * rasterScale}
+							role="img"
+							key="canvas"
+							aria-label={(daylight && scene.daylightLabel) || scene.label}
+							className={`relative block h-full w-full ${!colorEnabled && (dither ? "not-dark:[image-rendering:pixelated]" : "grayscale")}`}
+						/>
+					) : null;
 				}
-				className={`block h-full w-full ${!colorEnabled && (dither ? "not-dark:[image-rendering:pixelated]" : "grayscale")}`}
-			/>
-			{!hidden?.has("clouds") && visibleClouds?.length !== 0 && (
-				<SceneClouds clouds={visibleClouds} color={colorEnabled} />
-			)}
-			{!daylight && !hidden?.has("stars") && (
-				<>
-					<NightStars stars={stars} verticalScale={stars ? 1 : 0.62} />
-					{scene === "about" && motion && <ShootingStar />}
-				</>
-			)}
-			{!hidden?.has("celestial") && (
-				<SceneCelestial
-					celestial={celestial}
-					theme={theme}
-					color={colorEnabled}
-					onToggleColor={toggleColor}
-				/>
-			)}
-			<ScenePlants
-				plants={plants.filter(({ id }) => !hidden?.has(id))}
-				color={colorEnabled}
-			/>
-			{hasDust && <DustGlyphs patches={visibleDust} />}
-			{hasTower && (
+
+				if (!visibleLayers.includes(layer)) return null;
+				switch (layer.kind) {
+					case "ridge":
+						return (
+							publicTerrain && (
+								<div
+									key={layer.id}
+									className="pointer-events-none absolute inset-x-0 mask-[linear-gradient(#000_35%,#000b_62%,transparent_100%)]"
+									style={{
+										top: `${terrainBand.top}%`,
+										height: `${terrainBand.height}%`,
+									}}
+								>
+									<TerrainArtwork
+										scene={publicTerrain}
+										color={colorEnabled}
+										decorative
+									/>
+								</div>
+							)
+						);
+					case "sand":
+						return (
+							<div
+								key={layer.id}
+								className="pointer-events-none absolute inset-x-0 bottom-0 h-[19%]"
+							>
+								<DesertTexture layer="ground" color={colorEnabled} />
+							</div>
+						);
+					case "default-clouds":
+						return <SceneClouds key={layer.id} color={colorEnabled} />;
+					case "cloud":
+						return (
+							clouds[0] === layer && (
+								<SceneClouds
+									key="clouds"
+									clouds={clouds}
+									color={colorEnabled}
+								/>
+							)
+						);
+					case "stars":
+						return (
+							!daylight && (
+								<Fragment key={layer.id}>
+									<NightStars
+										stars={layer.stars}
+										verticalScale={layer.stars ? 1 : 0.62}
+									/>
+									{layer.shootingStar && motion && <ShootingStar />}
+								</Fragment>
+							)
+						);
+					case "celestial":
+						return (
+							<DesertCelestial
+								key={layer.id}
+								theme={theme}
+								motion={motion}
+								color={colorEnabled}
+								onToggleColor={toggleColor}
+							/>
+						);
+					case "plant":
+						return (
+							plants[0] === layer && (
+								<ScenePlants
+									key="plants"
+									plants={plants}
+									color={colorEnabled}
+								/>
+							)
+						);
+					case "dust":
+						return (
+							dust[0] === layer && <DustGlyphs key="dust" patches={dust} />
+						);
+				}
+				return null;
+			})}
+			{beaconRegion && (
 				<button
 					type="button"
 					aria-label="Blink the radio tower beacon"

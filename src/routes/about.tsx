@@ -1,3 +1,4 @@
+import { scenes } from "#/components/ascii-art/workshop/scenes";
 import { pageHead } from "#/lib/pageHead";
 import { createFileRoute } from "@tanstack/react-router";
 import { WorkshopScene } from "#/components/ascii-art/workshop/WorkshopScene";
@@ -39,7 +40,7 @@ function About() {
 			<DesertPageIntro
 				title="About"
 				description="My name is Siddarth. I'm a software engineer at ServiceNow and a graduate of IIT Hyderabad, where I studied Civil Engineering."
-				landscape={<WorkshopScene scene="about" />}
+				landscape={<WorkshopScene scene={scenes.about.public} />}
 			>
 				<div className="mt-5 flex flex-wrap gap-x-4 gap-y-2">
 					{socialLinks.map(({ label, href, logo: Logo }) => (

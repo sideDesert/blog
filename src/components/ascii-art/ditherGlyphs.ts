@@ -9,7 +9,7 @@ const bayerThresholds = [
 	[42, 26, 38, 22, 41, 25, 37, 21],
 ];
 
-export const ditherGlyphs = [
+const ditherGlyphs = [
 	[[0.02, 0.05, 0.95, 0.93]],
 	[[0.08, 0.02, 0.86, 0.97]],
 	[[0.05, 0.04, 0.89, 0.94]],
@@ -30,6 +30,50 @@ export const glyphSizeSteps = 16;
 export const desertDitherColumns = 740;
 export const desertDotSize = 0.72;
 export const rowPitchRatio = 1.33;
+export const terrainGrainAspect = 0.3928;
+
+export function createDitherStamps(
+	columnPitch: number,
+	squareRowPitch: number,
+	dotSize: number,
+	daylight: boolean,
+) {
+	const aspect = daylight ? 1 : 0.83;
+	const width = columnPitch * dotSize * aspect;
+	const height = (squareRowPitch * dotSize) / aspect;
+	return Array.from({ length: glyphSizeSteps + 1 }, (_, level) => {
+		const size = level / glyphSizeSteps;
+		return ditherGlyphs.map((glyph) =>
+			glyph.map(([left, top, spanX, spanY]) => ({
+				x: (left - 0.5) * width * size,
+				y: (top - 0.5) * height * size,
+				width: width * size * spanX,
+				height: height * size * spanY,
+			})),
+		);
+	});
+}
+
+export const darkInkLevels = [0.12, 0.27, 0.45, 0.58, 0.72, 1];
+export const monochromeNightInks = [
+	"var(--accent)",
+	"var(--border)",
+	"#767775",
+	"#949493",
+	"var(--muted-foreground)",
+	"var(--foreground)",
+] as const;
+
+export function darkInkLevel(tone: number, threshold: number) {
+	for (let index = 1; index < darkInkLevels.length; index++) {
+		const low = darkInkLevels[index - 1];
+		const high = darkInkLevels[index];
+		if (tone <= high)
+			return tone > low + (high - low) * threshold ? index : index - 1;
+	}
+	return darkInkLevels.length - 1;
+}
+
 export function glyphSize(coverage: number, rank: number) {
 	const chance = Math.sqrt(coverage);
 	return chance > (rank + 0.5) / 64

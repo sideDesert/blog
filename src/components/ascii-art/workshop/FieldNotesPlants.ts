@@ -212,7 +212,7 @@ export const fieldNotesPlants = [
 	{
 		id: "plant-cactus",
 		label: "Foreground cactus",
-		kind: "cactus",
+		species: "cactus",
 		x: 12,
 		y: 72,
 		width: 6,
@@ -221,7 +221,7 @@ export const fieldNotesPlants = [
 	{
 		id: "plant-far-cactus",
 		label: "Distant cactus",
-		kind: "cactus",
+		species: "cactus",
 		far: true,
 		x: 27.9,
 		y: 63.2,
@@ -231,7 +231,7 @@ export const fieldNotesPlants = [
 	{
 		id: "plant-cactus-grass",
 		label: "Grass beside the cactus",
-		kind: "grass",
+		species: "grass",
 		variant: "sparse",
 		x: 7.3,
 		y: 71.3,
@@ -240,7 +240,7 @@ export const fieldNotesPlants = [
 	{
 		id: "plant-west-grass",
 		label: "Grass above the west boulder",
-		kind: "grass",
+		species: "grass",
 		variant: "leaning",
 		x: 4.15,
 		y: 76.3,
@@ -249,7 +249,7 @@ export const fieldNotesPlants = [
 	{
 		id: "plant-valley-fan",
 		label: "Fan grass on the valley floor",
-		kind: "grass",
+		species: "grass",
 		variant: "fan",
 		x: 44,
 		y: 78.2,
@@ -258,7 +258,7 @@ export const fieldNotesPlants = [
 	{
 		id: "plant-valley-grass",
 		label: "Grass on the valley bank",
-		kind: "grass",
+		species: "grass",
 		variant: "leaning",
 		x: 40,
 		y: 71.6,
@@ -267,7 +267,7 @@ export const fieldNotesPlants = [
 	{
 		id: "plant-east-grass",
 		label: "East valley grass",
-		kind: "grass",
+		species: "grass",
 		variant: "sparse",
 		x: 50.8,
 		y: 68.2,
@@ -281,15 +281,50 @@ export const ledgeScrubLayer = {
 	draw: drawLedgeScrub,
 } as const;
 
+const valleyMotion = {
+	x: 130,
+	y: 339,
+	width: 112,
+	height: 67,
+	trigger: "frame",
+} as const;
+const foregroundMotion = {
+	x: 208,
+	y: 423,
+	width: 261,
+	height: 63,
+	trigger: "frame",
+} as const;
+
 export const fieldNotesVegetationLayers = [
-	yuccaLayer(
-		"west-boulder-yucca",
-		"Yucca beside the west boulder",
-		[245, 482, 48, 31],
-	),
-	yuccaLayer("valley-yucca", "Yucca on the valley floor", [214, 400, 35, 20]),
-	yuccaLayer("cactus-yucca", "Yucca beside the cactus", [164, 370, 31, 19]),
-	yuccaLayer("ledge-yucca", "Yucca at the ledge", [423, 477, 65, 52]),
+	{
+		...yuccaLayer(
+			"west-boulder-yucca",
+			"Yucca beside the west boulder",
+			[245, 482, 48, 31],
+		),
+		motion: [foregroundMotion],
+	},
+	{
+		...yuccaLayer(
+			"valley-yucca",
+			"Yucca on the valley floor",
+			[214, 400, 35, 20],
+		),
+		motion: [valleyMotion],
+	},
+	{
+		...yuccaLayer(
+			"cactus-yucca",
+			"Yucca beside the cactus",
+			[164, 370, 31, 19],
+		),
+		motion: [valleyMotion],
+	},
+	{
+		...yuccaLayer("ledge-yucca", "Yucca at the ledge", [423, 477, 65, 52]),
+		motion: [foregroundMotion],
+	},
 	{ id: "west-scrub", label: "Scrub beside west boulder", draw: drawWestScrub },
 	{ id: "scrub", label: "Valley scrub", draw: drawValleyScrub },
 	{

@@ -7,17 +7,17 @@
 :root {
   --desert-art-height: clamp(14rem, calc(100svh - 26rem), 30rem);
   --desert-sand-shadow: #3a2b22;
-  --desert-sand-deep: #68432f;
+  --desert-sand-deep: #8d4928;
   --desert-sand-muted: #8e6043;
   --desert-sand: #b17e57;
   --desert-sand-rim: #d0a077;
   --desert-sand-highlight: #f0d3af;
-  --desert-grass: #30582a;
-  --desert-wood: #b68270;
-  --desert-fabric: #739fa2;
-  --desert-metal: #9eaebd;
+  --desert-grass: #286321;
+  --desert-wood: #853c29;
+  --desert-fabric: #17616e;
+  --desert-metal: #35557d;
   --desert-paper: #d3cbb2;
-  --desert-hemp: #bba477;
+  --desert-hemp: #835d15;
   --desert-flame: #f8ad53;
   --desert-grass-neutral: #111111;
   --background: #f4f1e9;
@@ -38,6 +38,12 @@
 }
 
 .dark {
+  --desert-sand-deep: #68432f;
+  --desert-grass: #30582a;
+  --desert-wood: #b68270;
+  --desert-fabric: #739fa2;
+  --desert-metal: #9eaebd;
+  --desert-hemp: #bba477;
   --desert-grass-neutral: #8b8b8b;
   --background: #111111;
   --foreground: #f4f1e9;
@@ -169,7 +175,7 @@ nav a:not([aria-current="page"]):hover {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .night-star {
+  [data-desert-motion="true"] .night-star {
     animation: star-twinkle 5s ease-in-out infinite;
   }
 }
@@ -186,7 +192,7 @@ nav a:not([aria-current="page"]):hover {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .desert-grass-sway {
+  [data-desert-motion="true"] .desert-grass-sway {
     transform-origin: 50% 97%;
     animation: grass-in-the-wind 6.8s ease-in-out infinite;
   }

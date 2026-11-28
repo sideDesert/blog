@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import Cactus from "./cactus";
 import DesertTexture from "./DesertTexture";
 import Grass from "./Grass";
@@ -23,10 +24,10 @@ const cactusCanvasClass =
 
 export default function Ground({
 	color,
-	onCactusClick,
+	studioShortcut,
 }: {
 	color: boolean;
-	onCactusClick: () => void;
+	studioShortcut: boolean;
 }) {
 	return (
 		<div className="absolute inset-x-0 bottom-0 h-[var(--ground-depth)]">
@@ -60,13 +61,12 @@ export default function Ground({
 								far={plant.distant}
 								className={cactusCanvasClass}
 							/>
-							{plant.distant && (
-								<button
-									type="button"
+							{plant.distant && studioShortcut && (
+								<Link
+									to="/studio"
 									className="absolute inset-0 z-10 cursor-pointer border-0 bg-transparent p-0 focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-									onClick={onCactusClick}
-									aria-label="Toggle the desert playground"
-									title="Desert playground"
+									aria-label="Open the desert playground studio"
+									title="Desert playground studio"
 								/>
 							)}
 						</>

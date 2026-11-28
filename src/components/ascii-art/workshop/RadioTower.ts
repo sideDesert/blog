@@ -84,13 +84,14 @@ function towerFace(path: string, color: string) {
 	return (ctx: CanvasRenderingContext2D) => fill(ctx, path, color);
 }
 
-export const towerAntenna = "tower-antenna";
-export const towerSignalLayers = [
-	"signal",
-	"tower-waves",
-	"tower-middle-waves",
-	"tower-outer-waves",
-] as const;
+const towerAntenna = "tower-antenna";
+const beaconMotion = {
+	x: 648,
+	y: 216,
+	width: 76,
+	height: 54,
+	trigger: "beacon",
+} as const;
 
 export const radioTowerDither = [
 	{
@@ -100,7 +101,6 @@ export const radioTowerDither = [
 		right: 704,
 		bottom: 323,
 		pitchScale: 0.59,
-		style: "fine",
 	},
 	{
 		path: "M637 297h31v25h-31Z",
@@ -168,21 +168,32 @@ export const radioTowerLayers = (
 		],
 		["tower-shelter-trim", "Shelter frame and sill", drawTowerShelterTrim],
 		["tower-junction-box", "Tower junction box", drawTowerJunctionBox],
-		[towerSignalLayers[0], "Tower beacon", drawTowerBeacon],
+		["signal", "Tower beacon", drawTowerBeacon, beaconMotion],
 		[
-			towerSignalLayers[1],
+			"tower-waves",
 			"Inner signal waves",
 			towerWaves(7.4, metalInk("#584e41")),
+			beaconMotion,
 		],
 		[
-			towerSignalLayers[2],
+			"tower-middle-waves",
 			"Middle signal waves",
 			towerWaves(13, metalInk("#51493d")),
+			beaconMotion,
 		],
 		[
-			towerSignalLayers[3],
+			"tower-outer-waves",
 			"Outer signal waves",
 			towerWaves(19.7, metalInk("#524a3f")),
+			beaconMotion,
 		],
 	] as const
-).map(([id, label, draw]) => ({ id, label, group: "Radio tower", draw }));
+).map(([id, label, draw, motion]) => ({
+	id,
+	label,
+	group: "Radio tower",
+	draw,
+	motion: motion && [motion],
+	brightness: motion ? (true as const) : undefined,
+	beacon: id === "signal" ? { requires: towerAntenna } : undefined,
+}));

@@ -7,13 +7,11 @@ export function DesertPageIntro({
 	description,
 	landscape,
 	children,
-	asideInert,
 }: {
 	title: string;
 	description: string;
 	landscape: ReactNode;
 	children?: ReactNode;
-	asideInert?: boolean;
 }) {
 	return (
 		<div
@@ -24,7 +22,6 @@ export function DesertPageIntro({
 			</div>
 			<header
 				className={`${desertAside} mt-2 min-[56rem]:mt-0 min-[56rem]:pt-5`}
-				inert={asideInert}
 			>
 				<div className="flex items-start justify-between gap-2">
 					<h1 className="text-[1.625rem] font-semibold leading-[1.2]">

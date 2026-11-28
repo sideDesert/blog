@@ -1,13 +1,15 @@
+import { scenes } from "#/components/ascii-art/workshop/scenes";
 import { pageHead } from "#/lib/pageHead";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { WorkshopScene } from "#/components/ascii-art/workshop/WorkshopScene";
 import { DesertPageIntro } from "#/components/ui/DesertPageIntro";
 import { PostCover } from "#/components/ui/PostCover";
 import { desertMain } from "#/components/ui/desert-layout";
-import { posts } from "#/lib/posts";
+import { posts } from "virtual:posts";
 
 export const Route = createFileRoute("/posts/")({
 	component: Posts,
+	loader: () => posts,
 	head: () =>
 		pageHead(
 			"/posts",
@@ -17,12 +19,13 @@ export const Route = createFileRoute("/posts/")({
 });
 
 function Posts() {
+	const posts = Route.useLoaderData();
 	return (
 		<main className={desertMain}>
 			<DesertPageIntro
 				title="Blog"
 				description="Notes on databases, systems, and what I’m learning."
-				landscape={<WorkshopScene scene="blog" />}
+				landscape={<WorkshopScene scene={scenes.blog.public} />}
 			/>
 			{posts.length === 0 ? (
 				<p className="mt-6 text-muted-foreground">Writing in progress.</p>

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { afterDesertPaint } from "./afterDesertPaint";
 
 const textureWidth = 1230;
 const textureHeight = 274;
@@ -189,6 +190,7 @@ export default function DesertTexture({
 		let drawHeight = 0;
 		let previousTime = 0;
 		let animationFrame = 0;
+		let cancelStart: (() => void) | undefined;
 		const activeClouds = clouds
 			? clouds.map(({ x, heights, spread, depth, drift, opacity }) => ({
 					centerX: (x / 100) * textureWidth,
@@ -222,11 +224,16 @@ export default function DesertTexture({
 		const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 		const syncAnimation = () => {
 			if (layer !== "sky" || motionQuery.matches) {
+				cancelStart?.();
+				cancelStart = undefined;
 				cancelAnimationFrame(animationFrame);
 				animationFrame = 0;
 				previousTime = 0;
-			} else if (!animationFrame) {
-				animationFrame = requestAnimationFrame(renderFrame);
+			} else if (drawHeight > 0 && !animationFrame && !cancelStart) {
+				cancelStart = afterDesertPaint(() => {
+					cancelStart = undefined;
+					animationFrame = requestAnimationFrame(renderFrame);
+				});
 			}
 		};
 
@@ -251,6 +258,7 @@ export default function DesertTexture({
 
 		return () => {
 			observer.disconnect();
+			cancelStart?.();
 			motionQuery.removeEventListener("change", syncAnimation);
 			cancelAnimationFrame(animationFrame);
 		};

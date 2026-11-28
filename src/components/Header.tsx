@@ -1,16 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { useSandClickAudio } from "#/lib/hooks/useSandClickAudio";
+import { useDesertAudioContext } from "#/components/audio/DesertAudioContext";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinkClass =
   "text-muted-foreground no-underline hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground";
 
 export default function Header() {
-  const playSandClick = useSandClickAudio();
-
-  function handleNavClick() {
-    void playSandClick();
-  }
+  const { playNavigationClick } = useDesertAudioContext();
 
   return (
     <header>
@@ -35,7 +31,7 @@ export default function Header() {
             to="/"
             className={navLinkClass}
             activeOptions={{ exact: true }}
-            onClick={handleNavClick}
+            onClick={playNavigationClick}
           >
             [ home ]
           </Link>
@@ -43,7 +39,7 @@ export default function Header() {
             to="/posts"
             className={navLinkClass}
             activeOptions={{ exact: true }}
-            onClick={handleNavClick}
+            onClick={playNavigationClick}
           >
             [ blog ]
           </Link>
@@ -51,7 +47,7 @@ export default function Header() {
             to="/projects"
             className={navLinkClass}
             activeOptions={{ exact: true }}
-            onClick={handleNavClick}
+            onClick={playNavigationClick}
           >
             [ projects ]
           </Link>
@@ -59,7 +55,7 @@ export default function Header() {
             to="/about"
             className={navLinkClass}
             activeOptions={{ exact: true }}
-            onClick={handleNavClick}
+            onClick={playNavigationClick}
           >
             [ about ]
           </Link>

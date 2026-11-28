@@ -3,16 +3,45 @@ import { fill } from "./canvasShapes";
 import { drawRock } from "./DesertDetails";
 import type { Plant } from "./SceneScenery";
 
+export const aboutRidge = [
+	[0, 226],
+	[23, 220],
+	[55, 193],
+	[93, 188],
+	[122, 153],
+	[174, 150],
+	[193, 156],
+	[215, 196],
+	[249, 208],
+	[265, 239],
+	[302, 243],
+	[331, 263],
+	[391, 259],
+	[437, 272],
+	[473, 257],
+	[515, 258],
+	[568, 270],
+	[605, 258],
+	[660, 255],
+	[684, 225],
+	[710, 208],
+	[723, 180],
+	[771, 182],
+	[786, 203],
+	[821, 212],
+	[846, 238],
+	[879, 236],
+	[908, 248],
+	[960, 255],
+	[1000, 263],
+] as const;
+
 function drawCanyon(ctx: CanvasRenderingContext2D) {
 	const dusk = ctx.createLinearGradient(0, 145, 0, 428);
-	dusk.addColorStop(0, "#544d40");
-	dusk.addColorStop(0.48, "#302a22");
+	dusk.addColorStop(0, "#685849");
+	dusk.addColorStop(0.48, "#382e24");
 	dusk.addColorStop(1, "#11111100");
-	fill(
-		ctx,
-		"M0 226l23-6 32-27 38-5 29-35 52-3 19 6 22 40 34 12 16 31 37 4 29 20 60-4 46 13 36-15 42 1 53 12 37-12 55-3 24-30 26-17 13-28 48 2 15 21 35 9 25 26 33-2 29 12 52 7v172H0Z",
-		dusk,
-	);
+	fill(ctx, `M${aboutRidge.join(" ")}v164H0Z`, dusk);
 }
 
 function drawCanyonFaces(ctx: CanvasRenderingContext2D) {
@@ -259,18 +288,21 @@ function drawEmbers(ctx: CanvasRenderingContext2D, seconds = 0) {
 	}
 }
 
-export const campfireLightLayers = [
-	"tent-firelight",
-	"firelight",
-	"outer-flame",
-	"inner-flame",
-	"embers",
-] as const;
+const campfireMotion = {
+	x: 439,
+	y: 319,
+	width: 277,
+	height: 118,
+	trigger: "frame",
+} as const;
 
-export const campsiteLayers = [
+export const campsiteTerrainLayers = [
 	{ id: "canyon-camp", label: "Canyon silhouette", draw: drawCanyon },
 	{ id: "canyon-faces", label: "Canyon stone faces", draw: drawCanyonFaces },
 	{ id: "canyon-wash", label: "Sand in the canyon wash", draw: drawCanyonWash },
+] as const;
+
+export const campsiteLayers = [
 	...campRockLayers,
 	{
 		id: "tent-shadow",
@@ -320,12 +352,16 @@ export const campsiteLayers = [
 		label: "Firelight on the tent",
 		group: "Tent",
 		draw: drawTentFirelight,
+		nightOnly: true,
+		motion: [campfireMotion],
 	},
 	{
 		id: "firelight",
 		label: "Firelight on the sand",
 		group: "Campfire",
 		draw: drawFirelight,
+		nightOnly: true,
+		motion: [campfireMotion],
 	},
 	{ id: "fire-bed", label: "Fire bed", group: "Campfire", draw: drawFireBed },
 	...fireRingLayers,
@@ -346,21 +382,32 @@ export const campsiteLayers = [
 		label: "Outer flame",
 		group: "Campfire",
 		draw: drawOuterFlame,
+		nightOnly: true,
+		motion: [campfireMotion],
 	},
 	{
 		id: "inner-flame",
 		label: "Inner flame",
 		group: "Campfire",
 		draw: drawInnerFlame,
+		nightOnly: true,
+		motion: [campfireMotion],
 	},
-	{ id: "embers", label: "Rising embers", group: "Campfire", draw: drawEmbers },
+	{
+		id: "embers",
+		label: "Rising embers",
+		group: "Campfire",
+		draw: drawEmbers,
+		nightOnly: true,
+		motion: [campfireMotion],
+	},
 ] as const;
 
 export const campsitePlants = [
 	{
 		id: "plant-cactus",
 		label: "Cactus by the tent",
-		kind: "cactus",
+		species: "cactus",
 		x: 20,
 		y: 82,
 		width: 7.7,
@@ -368,7 +415,7 @@ export const campsitePlants = [
 	{
 		id: "plant-far-cactus",
 		label: "Distant campsite cactus",
-		kind: "cactus",
+		species: "cactus",
 		far: true,
 		x: 78,
 		y: 72,
@@ -377,7 +424,7 @@ export const campsitePlants = [
 	{
 		id: "plant-west-grass",
 		label: "West campsite grass",
-		kind: "grass",
+		species: "grass",
 		variant: "fan",
 		x: 15,
 		y: 92,
@@ -386,7 +433,7 @@ export const campsitePlants = [
 	{
 		id: "plant-tent-grass",
 		label: "Grass by the tent",
-		kind: "grass",
+		species: "grass",
 		variant: "open",
 		x: 36,
 		y: 88,
@@ -395,7 +442,7 @@ export const campsitePlants = [
 	{
 		id: "plant-fire-grass",
 		label: "Grass past the fire",
-		kind: "grass",
+		species: "grass",
 		variant: "leaning",
 		x: 71,
 		y: 90,
@@ -404,7 +451,7 @@ export const campsitePlants = [
 	{
 		id: "plant-east-grass",
 		label: "East campsite grass",
-		kind: "grass",
+		species: "grass",
 		variant: "sparse",
 		x: 92,
 		y: 79,

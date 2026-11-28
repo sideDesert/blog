@@ -1,12 +1,15 @@
 import {
+	createDitherStamps,
+	darkInkLevel,
 	desertDitherColumns,
 	desertDotSize,
-	ditherGlyphs,
 	glyphSize,
-	glyphSizeSteps,
+	monochromeNightInks,
 	rowPitchRatio,
 	sampleGlyphCell,
+	terrainGrainAspect,
 } from "../ditherGlyphs";
+import { terrainBand } from "../terrain/geometry";
 import { materialAt } from "./materialInk";
 
 function pixelInk(data: ImageData["data"], offset: number) {
@@ -34,8 +37,6 @@ function sampleInk(frame: ImageData, x: number, y: number) {
 	return upper * (1 - blendY) + lower * blendY;
 }
 
-export type DitherStyle = "fine" | "soft";
-
 export const workshopWidth = 1000;
 export const workshopHeight = 500;
 
@@ -46,19 +47,28 @@ type DitherBounds = {
 	bottom: number;
 };
 
-type DitherDetail = DitherBounds & {
+export type DitherDetail = DitherBounds & {
 	path: string;
 	pitchScale?: number;
-	style?: DitherStyle;
+	order?: number;
 };
 
 export type DitherPaint = {
-	style: DitherStyle;
 	daylight: boolean;
 	palette?: ReturnType<typeof readDesertInks>;
+	nightInks?: readonly string[];
 	detail?: readonly DitherDetail[];
 	paperFaces?: readonly string[];
 };
+
+export function readMonochromeNightInks(element: HTMLElement) {
+	const css = getComputedStyle(element);
+	return monochromeNightInks.map((ink) =>
+		ink.startsWith("var(")
+			? css.getPropertyValue(ink.slice(4, -1)).trim()
+			: ink,
+	);
+}
 
 export function readDesertInks(element: HTMLElement, dark: boolean) {
 	const css = getComputedStyle(element);
@@ -82,7 +92,7 @@ export function readDesertInks(element: HTMLElement, dark: boolean) {
 		return Array.from({ length: 256 }, (_, ink) => {
 			const gain = dark
 				? Math.min(1.4, 0.52 + ink / 150)
-				: Math.max(0.45, 0.78 - ink / 620);
+				: Math.max(0.82, 1.03 - ink / 1200);
 			return `rgb(${base
 				.map((channel) => Math.round(Math.min(255, channel * gain)))
 				.join(" ")})`;
@@ -96,7 +106,7 @@ export function readDesertInks(element: HTMLElement, dark: boolean) {
 		hemp: materialShades("hemp"),
 		flame: materialShades("flame"),
 		sand: Array.from({ length: 256 }, (_, ink) => {
-			const level = dark ? Math.min(5, 1.2 + ink / 45) : 1;
+			const level = dark ? Math.min(5, 1.65 + ink / 48) : 1;
 			const left = Math.floor(level);
 			const blend = level - left;
 			const right = Math.min(left + 1, sand.length - 1);
@@ -176,7 +186,7 @@ export function ditherCanvas(
 		drawMarks(
 			ctx,
 			frame,
-			detail.style ? { ...paint, style: detail.style } : paint,
+			paint,
 			origin,
 			detailBounds,
 			pitch * (detail.pitchScale ?? 0.78),
@@ -188,30 +198,40 @@ export function ditherCanvas(
 function drawMarks(
 	ctx: CanvasRenderingContext2D,
 	frame: ImageData,
-	{ style, daylight, palette }: DitherPaint,
+	{ daylight, palette, nightInks }: DitherPaint,
 	origin: { x: number; y: number },
 	bounds: DitherBounds,
 	columnPitch: number,
 ) {
 	const { width } = frame;
-	const softHighlights = !daylight && style === "soft";
 	const snapToPixels = daylight && !palette;
 	const scale = ctx.getTransform().a;
-	const rowPitch = columnPitch * rowPitchRatio;
+	const terrainHeight = (workshopHeight * terrainBand.height) / 100;
+	const rowOrigin = (workshopHeight * terrainBand.top) / 100;
+	const squareRowPitch =
+		(columnPitch * terrainHeight) / (workshopWidth * terrainGrainAspect);
+	const rowPitch = squareRowPitch * rowPitchRatio;
+	const stamps = createDitherStamps(
+		columnPitch,
+		squareRowPitch,
+		daylight ? desertDotSize * 1.2 : desertDotSize,
+		daylight,
+	);
 	const firstColumn = Math.max(0, Math.floor(bounds.left / columnPitch));
-	const firstRow = Math.max(0, Math.floor(bounds.top / rowPitch));
+	const firstRow = Math.max(0, Math.floor((bounds.top - rowOrigin) / rowPitch));
 	const lastColumn = bounds.right / columnPitch - 0.5;
-	const lastRow = bounds.bottom / rowPitch - 0.5;
+	const lastRow = (bounds.bottom - rowOrigin) / rowPitch - 0.5;
 
 	for (let column = firstColumn; column < lastColumn; column++) {
 		for (let row = firstRow; row < lastRow; row++) {
 			const x = (column + 0.5) * columnPitch - origin.x;
-			const y = (row + 0.5) * rowPitch - origin.y;
+			const y = rowOrigin + (row + 0.5) * rowPitch - origin.y;
 			const ink = sampleInk(frame, x, y);
-			if (!ink) continue;
+			const coverage = daylight ? (ink - 9) / 44 : ink / 104;
+			if (coverage <= 0) continue;
 			const cell = sampleGlyphCell(column, row);
-			const intensity = Math.min(1, ink / (daylight ? 72 : 140));
-			const size = glyphSize(intensity, cell.rank) / glyphSizeSteps;
+			const intensity = Math.min(1, coverage);
+			const size = glyphSize(intensity, cell.rank);
 			if (!size) continue;
 			if (palette) {
 				const offset =
@@ -222,39 +242,18 @@ function drawMarks(
 					frame.data[offset + 2],
 				);
 				ctx.fillStyle = palette[material][Math.round(ink)];
+			} else if (nightInks) {
+				const tone = Math.min(1, 0.24 + ink / 190);
+				ctx.fillStyle = nightInks[darkInkLevel(tone, cell.toneThreshold)];
 			}
-			const highlight = Math.min(1, Math.max(0, (ink - 18) / 88));
-			const footprint = size * (daylight ? 1 : 1 + 0.52 * highlight);
-			const aspect = daylight ? 1 : 0.83;
-			const markWidth = columnPitch * desertDotSize * aspect * footprint;
-			const markHeight = Math.min(
-				rowPitch * 0.98,
-				((columnPitch * desertDotSize) / aspect) * footprint,
-			);
 			const centerX = x + cell.scatterX * columnPitch;
 			const centerY = y + cell.scatterY * rowPitch;
 
-			const softness = softHighlights
-				? Math.min(0.36, Math.max(0, (ink - 52) / 190))
-				: 0;
-			if (softness > 0) {
-				ctx.globalAlpha = softness * 0.52;
-				ctx.fillRect(
-					x - columnPitch / 2,
-					y - rowPitch / 2,
-					columnPitch,
-					rowPitch,
-				);
-			}
-			const alpha = daylight
-				? 1
-				: Math.min(1, (72 + ink * (1.35 + 0.3 * highlight)) / 255);
-			ctx.globalAlpha = alpha * (1 - softness);
-			for (const [left, top, spanX, spanY] of ditherGlyphs[cell.glyph]) {
-				const x = centerX + (left - 0.5) * markWidth;
-				const y = centerY + (top - 0.5) * markHeight;
-				const width = spanX * markWidth;
-				const height = spanY * markHeight;
+			for (const { x: left, y: top, width, height } of stamps[size][
+				cell.glyph
+			]) {
+				const x = centerX + left;
+				const y = centerY + top;
 				if (snapToPixels) {
 					const leftPixel = Math.round(x * scale);
 					const topPixel = Math.round(y * scale);
@@ -270,5 +269,4 @@ function drawMarks(
 			}
 		}
 	}
-	ctx.globalAlpha = 1;
 }

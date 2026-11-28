@@ -283,7 +283,7 @@ const NEUTRAL_INKS = {
 };
 
 const DARK_GREEN_INKS = {
-  light: [54, 91, 73] as Ink,
+  light: [24, 91, 57] as Ink,
   dark: [54, 91, 73] as Ink,
 };
 
@@ -385,7 +385,7 @@ export default function Cactus({
   const inks = darkGreen ? DARK_GREEN_INKS : NEUTRAL_INKS;
   const lightFilter = far
     ? darkGreen
-      ? "[filter:brightness(1.15)_saturate(0.8)]"
+      ? "brightness-110"
       : "brightness-[2.8] dark:brightness-100"
     : undefined;
 

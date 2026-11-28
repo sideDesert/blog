@@ -5,35 +5,14 @@ import {
   desertRow,
 } from "#/components/ui/desert-layout";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useReducer, useState } from "react";
+import { useEffect, useState } from "react";
 import Landscape from "#/components/ascii-art/Landscape";
-import { DEFAULT_CIRCLES } from "#/components/ascii-art/Sun";
-import { DEFAULT_SUN_PALETTES } from "#/components/ascii-art/sun/palette";
-import {
-  createInitialState,
-  terrainReducer,
-} from "#/components/ascii-art/terrain/state";
 import { DesertPageIntro } from "#/components/ui/DesertPageIntro";
-import { useDesertAudioContext } from "#/components/audio/DesertAudioContext";
-import {
-  readShowSunBounds,
-  readSunCircles,
-  readSunPalettes,
-  readTerrainConfig,
-  writeShowSunBounds,
-  writeSunCircles,
-  writeSunPalettes,
-  writeTerrainConfig,
-} from "#/lib/playgroundStorage";
-
-import { posts } from "#/lib/posts";
-
-const Playground = lazy(() => import("#/components/playground/Playground"));
-const playgroundPosition =
-  "pointer-events-auto fixed inset-x-0 bottom-0 z-30 h-[min(45svh,26rem)] border-t border-(--rule) min-[56rem]:static min-[56rem]:col-start-2 min-[56rem]:h-full min-[56rem]:border-t-0 min-[56rem]:border-l";
+import { posts } from "virtual:posts";
 
 export const Route = createFileRoute("/")({
   component: Home,
+  loader: () => posts.slice(0, 2),
   head: () => pageHead("/", "sideDesert | Siddarth Saha", siteDescription),
 });
 
@@ -95,6 +74,7 @@ function pickDesertQuote() {
 }
 
 function LatestPosts() {
+  const posts = Route.useLoaderData();
   return (
     <section className="py-4" aria-labelledby="latest-posts">
       <h2
@@ -105,7 +85,7 @@ function LatestPosts() {
       </h2>
       {posts.length > 0 ? (
         <ul className="mr-6">
-          {posts.slice(0, 2).map((post) => (
+          {posts.map((post) => (
             <li key={post.slug}>
               <Link
                 className="block p-3 hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50"
@@ -125,64 +105,18 @@ function LatestPosts() {
 }
 
 function Home() {
-  const [terrainState, terrainDispatch] = useReducer(
-    terrainReducer,
-    undefined,
-    createInitialState,
-  );
-  const [sunPalettes, setSunPalettes] = useState(DEFAULT_SUN_PALETTES);
-  const [sunCircles, setSunCircles] = useState(DEFAULT_CIRCLES);
-  const [showSunBounds, setShowSunBounds] = useState(false);
-  const [storageLoaded, setStorageLoaded] = useState(false);
-  const [playgroundOpen, setPlaygroundOpen] = useState(false);
   const [desertQuote, setDesertQuote] = useState(desertQuotes[0]!);
-  const audio = useDesertAudioContext();
 
   useEffect(() => {
     setDesertQuote(pickDesertQuote());
-
-    const config = readTerrainConfig();
-    if (config) terrainDispatch({ type: "loadConfig", config });
-    setSunPalettes(readSunPalettes());
-    setSunCircles(readSunCircles());
-    setShowSunBounds(readShowSunBounds());
-    setStorageLoaded(true);
   }, []);
-
-  useEffect(() => {
-    if (storageLoaded) writeTerrainConfig(terrainState.config);
-  }, [terrainState.config, storageLoaded]);
-
-  useEffect(() => {
-    if (storageLoaded) writeSunPalettes(sunPalettes);
-  }, [sunPalettes, storageLoaded]);
-
-  useEffect(() => {
-    if (storageLoaded) writeSunCircles(sunCircles);
-  }, [sunCircles, storageLoaded]);
-
-  useEffect(() => {
-    if (storageLoaded) writeShowSunBounds(showSunBounds);
-  }, [showSunBounds, storageLoaded]);
-
-  const landscape = (
-    <Landscape
-      terrainState={terrainState}
-      terrainDispatch={terrainDispatch}
-      sunPalettes={sunPalettes}
-      sunCircles={sunCircles}
-      showSunBounds={showSunBounds}
-      onCactusClick={() => setPlaygroundOpen((current) => !current)}
-    />
-  );
 
   return (
     <main className={`${desertMain} relative`}>
       <DesertPageIntro
         title="sideDesert"
         description="A quiet corner on the internet. Notes, ideas, code and curiosity from the side of the desert."
-        landscape={landscape}
-        asideInert={playgroundOpen}
+        landscape={<Landscape studioShortcut />}
       >
         <blockquote className="mt-3.5 italic">
           “Wide horizons, deeper thoughts.”
@@ -196,39 +130,10 @@ function Home() {
           onClick={() => setDesertQuote(pickDesertQuote())}
           className={`${desertAside} flex w-full max-w-64 cursor-pointer items-start justify-start pt-2 pb-5 text-left min-[56rem]:max-w-none min-[56rem]:self-stretch min-[56rem]:pt-[1.625rem]`}
           aria-label="Show another desert quote"
-          inert={playgroundOpen}
         >
           <span className="block min-[56rem]:max-w-[20ch]">{desertQuote}</span>
         </button>
       </div>
-      {playgroundOpen && (
-        <div className={`${desertRow} pointer-events-none contents min-[56rem]:absolute min-[56rem]:inset-0 min-[56rem]:z-30 min-[56rem]:grid-rows-[minmax(0,1fr)]`}>
-          <Suspense
-            fallback={
-              <p role="status" className={`${playgroundPosition} bg-background p-4`}>
-                Loading playground…
-              </p>
-            }
-          >
-            <Playground
-              terrainState={terrainState}
-              terrainDispatch={terrainDispatch}
-              sunPalettes={sunPalettes}
-              onSunPalettesChange={setSunPalettes}
-              sunCircles={sunCircles}
-              onSunCirclesChange={setSunCircles}
-              showSunBounds={showSunBounds}
-              onShowSunBoundsChange={setShowSunBounds}
-              audioPlaying={audio.playing}
-              audioSettings={audio.settings}
-              onAudioToggle={audio.toggle}
-              onAudioUpdate={audio.update}
-              onClose={() => setPlaygroundOpen(false)}
-              className={playgroundPosition}
-            />
-          </Suspense>
-        </div>
-      )}
     </main>
   );
 }

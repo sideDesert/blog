@@ -2,11 +2,7 @@ import { fill, fillTerrainContours, stroke } from "./canvasShapes";
 import { cliffFaces } from "./cliffFaces";
 import { rockLayer } from "./DesertDetails";
 import { lookoutDither, lookoutLayers } from "./FieldNotesLookout";
-import {
-	notebookDither,
-	notebookLayers,
-	pencilDither,
-} from "./FieldNotesNotebook";
+import { notebookLayers } from "./FieldNotesNotebook";
 import {
 	fieldNotesVegetationLayers,
 	ledgeScrubLayer,
@@ -23,8 +19,53 @@ import { ledgeFaces } from "./ledgeFaces";
 import { lookoutFaces } from "./lookoutFaces";
 import { valleyContours } from "./valleyContours";
 
-const escarpmentSkyline =
-	"M0 140 21 133 53 131 85 129 111 125 132 125 138 128 142 134 145 154 164 155 176 158 180 160 184 171 197 172 216 171 238 169 249 167 267 168 282 169 294 173 299 192 305 195 314 205 324 215 339 221 373 223 393 228 411 221 440 216 483 214 520 227 577 227 614 235 649 233 701 239 738 234 771 244 807 243 846 229 877 232 922 225 959 235 1000 230V327H0Z";
+export const blogRidge = [
+	[0, 140],
+	[21, 133],
+	[53, 131],
+	[85, 129],
+	[111, 125],
+	[132, 125],
+	[138, 128],
+	[142, 134],
+	[145, 154],
+	[164, 155],
+	[176, 158],
+	[180, 160],
+	[184, 171],
+	[197, 172],
+	[216, 171],
+	[238, 169],
+	[249, 167],
+	[267, 168],
+	[282, 169],
+	[294, 173],
+	[299, 192],
+	[305, 195],
+	[314, 205],
+	[324, 215],
+	[339, 221],
+	[373, 223],
+	[393, 228],
+	[411, 221],
+	[440, 216],
+	[483, 214],
+	[520, 227],
+	[577, 227],
+	[614, 235],
+	[649, 233],
+	[701, 239],
+	[738, 234],
+	[771, 244],
+	[807, 243],
+	[846, 229],
+	[877, 232],
+	[922, 225],
+	[959, 235],
+	[1000, 230],
+] as const;
+
+const escarpmentSkyline = `M${blogRidge.join(" ")}V327H0Z`;
 
 function drawDistantCliffBench(ctx: CanvasRenderingContext2D) {
 	ctx.clip(
@@ -43,8 +84,8 @@ function drawDistantCliffBench(ctx: CanvasRenderingContext2D) {
 
 function drawEscarpment(ctx: CanvasRenderingContext2D) {
 	const wash = ctx.createLinearGradient(0, 129, 0, 325);
-	wash.addColorStop(0, "#302921");
-	wash.addColorStop(0.55, "#25211b");
+	wash.addColorStop(0, "#4c4135");
+	wash.addColorStop(0.55, "#28231e");
 	wash.addColorStop(1, "#151514");
 	ctx.fillStyle = wash;
 	ctx.fill(new Path2D(escarpmentSkyline));
@@ -73,7 +114,7 @@ function drawCliffFaces(ctx: CanvasRenderingContext2D) {
 function drawCliffShadows(ctx: CanvasRenderingContext2D) {
 	ctx.clip(new Path2D(escarpmentSkyline));
 	const stone = ctx.createLinearGradient(0, 127, 0, 263);
-	stone.addColorStop(0, "#231f1b");
+	stone.addColorStop(0, "#332a22");
 	stone.addColorStop(0.54, "#1d1916");
 	stone.addColorStop(0.8, "#201b17a8");
 	stone.addColorStop(1, "#201b1700");
@@ -519,24 +560,7 @@ const fieldRockLayers = [
 	]),
 ] as const;
 
-export function fieldNotesDither(visibleLayers: readonly string[]) {
-	const paperVisible = visibleLayers.some(
-		(id) =>
-			(id.startsWith("notebook-") && id !== "notebook-shadow") ||
-			id === "pages",
-	);
-	const pencilVisible = visibleLayers.some(
-		(id) => id.startsWith("pencil-") && id !== "pencil-shadow",
-	);
-	const lookoutVisible = visibleLayers.some((id) => id.startsWith("lookout"));
-	return [
-		...(paperVisible ? [notebookDither] : []),
-		...(pencilVisible ? [pencilDither] : []),
-		...(lookoutVisible ? [lookoutDither] : []),
-	];
-}
-
-export const fieldNotesLayers = [
+export const fieldNotesTerrainLayers = [
 	{
 		id: "distant-cliff-bench",
 		label: "Distant cliff bench",
@@ -558,12 +582,20 @@ export const fieldNotesLayers = [
 		label: "Foreground washes",
 		draw: drawForegroundWashes,
 	},
-	{ id: "lookout-rise", label: "Lookout rise", draw: drawLookoutRise },
-	...lookoutSlopeLayers,
-	...lookoutSlopeRocks,
+] as const;
+
+export const fieldNotesLayers = [
+	{
+		id: "lookout-rise",
+		label: "Lookout rise",
+		draw: drawLookoutRise,
+		detail: lookoutDither,
+	},
+	...lookoutSlopeLayers.map((layer) => ({ ...layer, detail: lookoutDither })),
+	...lookoutSlopeRocks.map((layer) => ({ ...layer, detail: lookoutDither })),
 	{ id: "trail-shoulders", label: "Trail shoulders", draw: drawTrailShoulders },
 	{ id: "trail", label: "Winding trail", draw: drawTrail },
-	...lookoutLayers,
+	...lookoutLayers.map((layer) => ({ ...layer, detail: lookoutDither })),
 	ledgeScrubLayer,
 	{
 		id: "ledge",

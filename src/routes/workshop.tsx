@@ -4,10 +4,8 @@ import { useMemo, useState } from "react";
 import blogReference from "#/assets/workshop/blog-reference.webp";
 import projectsReference from "#/assets/workshop/projects-reference.webp";
 import {
-	defaultCloudLayer,
-	sceneryLayers,
 	scenes,
-	type WorkshopLayer,
+	type SceneLayer,
 	type WorkshopSceneName,
 } from "#/components/ascii-art/workshop/scenes";
 import { WorkshopScene } from "#/components/ascii-art/workshop/WorkshopScene";
@@ -28,40 +26,18 @@ const referenceImages: Partial<Record<WorkshopSceneName, string>> = {
 	blog: blogReference,
 };
 
-type LayerControl = { id: WorkshopLayer; label: string; group?: string };
-
 function Workshop() {
 	const [scene, setScene] = useState<WorkshopSceneName>("projects");
 	const [hiddenByScene, setHiddenByScene] = useState<
-		Partial<Record<WorkshopSceneName, ReadonlySet<WorkshopLayer>>>
+		Partial<Record<WorkshopSceneName, ReadonlySet<string>>>
 	>({});
-	const [isolatedLayer, setIsolatedLayer] = useState<WorkshopLayer>();
+	const [isolatedLayer, setIsolatedLayer] = useState<string>();
 	const [layerFilter, setLayerFilter] = useState("");
 	const [dither, setDither] = useState(true);
 	const [referenceOpacity, setReferenceOpacity] = useState(0);
 	const reference = referenceImages[scene];
-	const layers = useMemo<LayerControl[]>(
-		() => [
-			...sceneryLayers,
-			...(scenes[scene].clouds?.map(({ id, label }) => ({
-				id,
-				label,
-				group: "Cloud wisps",
-			})) ?? [defaultCloudLayer]),
-			...scenes[scene].plants.map(({ id, label }) => ({
-				id,
-				label,
-				group: "Cacti and grasses",
-			})),
-			...scenes[scene].dust.map(({ id, label }) => ({
-				id,
-				label,
-				group: "Sand glyphs",
-			})),
-			...scenes[scene].layers,
-		],
-		[scene],
-	);
+	const composition = scenes[scene].reference;
+	const layers = composition.layers;
 	const { ungrouped, groups, noResults, selectedOutsideFilter } =
 		useMemo(() => {
 			const terms = layerFilter
@@ -69,9 +45,9 @@ function Workshop() {
 				.trim()
 				.split(/\s+/)
 				.filter(Boolean);
-			const ungrouped: LayerControl[] = [];
-			const groups = new Map<string, LayerControl[]>();
-			let selectedOutsideFilter: LayerControl | undefined;
+			const ungrouped: SceneLayer[] = [];
+			const groups = new Map<string, SceneLayer[]>();
+			let selectedOutsideFilter: SceneLayer | undefined;
 			for (const layer of layers) {
 				const searchable =
 					`${layer.label} ${layer.group ?? ""} ${layer.id}`.toLowerCase();
@@ -94,17 +70,8 @@ function Workshop() {
 				selectedOutsideFilter,
 			};
 		}, [layers, layerFilter, isolatedLayer]);
-	const hidden = useMemo(
-		() =>
-			isolatedLayer
-				? new Set(
-						layers.map(({ id }) => id).filter((id) => id !== isolatedLayer),
-					)
-				: hiddenByScene[scene],
-		[hiddenByScene, isolatedLayer, layers, scene],
-	);
 
-	function toggle(layer: WorkshopLayer) {
+	function toggle(layer: string) {
 		setHiddenByScene((previous) => {
 			const next = new Set(previous[scene]);
 			if (!next.delete(layer)) next.add(layer);
@@ -112,7 +79,7 @@ function Workshop() {
 		});
 	}
 
-	function layerOption({ id, label }: LayerControl) {
+	function layerOption({ id, label }: SceneLayer) {
 		return (
 			<option key={id} value={id}>
 				{label}
@@ -120,12 +87,16 @@ function Workshop() {
 		);
 	}
 
-	function layerCheckbox({ id, label }: LayerControl) {
+	function layerCheckbox({ id, label }: SceneLayer) {
 		return (
 			<label key={id} className="flex cursor-pointer items-center gap-2">
 				<input
 					type="checkbox"
-					checked={!hidden?.has(id)}
+					checked={
+						isolatedLayer === undefined
+							? !hiddenByScene[scene]?.has(id)
+							: isolatedLayer === id
+					}
 					onChange={() => toggle(id)}
 				/>
 				{label}
@@ -143,7 +114,12 @@ function Workshop() {
 			</header>
 			<div className="flex flex-col gap-5 py-5 md:grid md:grid-cols-[minmax(0,1fr)_12rem]">
 				<div className="sticky top-0 z-10 min-w-0 bg-background md:self-start">
-					<WorkshopScene scene={scene} hidden={hidden} dither={dither} />
+					<WorkshopScene
+						scene={composition}
+						hidden={hiddenByScene[scene]}
+						isolated={isolatedLayer}
+						dither={dither}
+					/>
 					{reference && referenceOpacity > 0 && (
 						<img
 							src={reference}

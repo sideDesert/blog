@@ -1,3 +1,5 @@
+import { type ReactNode, useId } from "react";
+import { monochromeNightInks } from "../ditherGlyphs";
 import type { TerrainScene } from "./geometry";
 import { evaluateShape, samples } from "./geometry";
 import type { TerrainConfig, ViewSettings } from "./model";
@@ -9,43 +11,37 @@ import {
 	terrainFrame,
 } from "./shading";
 
-type CanvasProps = {
-	clipId: string;
-	config: TerrainConfig;
-	selectedId: string;
-	view: ViewSettings;
-	dither: boolean;
-	drawingSeams: boolean;
-	scene: TerrainScene;
-	color: boolean;
-	canvasClassName: string;
-	onDraw: (seam: DrawnSeam) => void;
-};
+const sandstoneNightInks = [
+	"var(--desert-sand-shadow)",
+	"var(--desert-sand-deep)",
+	"var(--desert-sand-muted)",
+	"var(--desert-sand)",
+	"var(--desert-sand-rim)",
+	"var(--desert-sand-highlight)",
+] as const;
 
-export function TerrainCanvas({
-	clipId,
-	config,
-	selectedId,
-	view,
-	dither,
-	drawingSeams,
+export function TerrainArtwork({
 	scene,
 	color,
-	canvasClassName,
-	onDraw,
-}: CanvasProps) {
-	const selected = config.shapes.find((shape) => shape.id === selectedId);
+	children,
+	decorative = false,
+}: {
+	scene: Pick<TerrainScene, "dotPaths" | "silhouette">;
+	color: boolean;
+	children?: ReactNode;
+	decorative?: boolean;
+}) {
+	const clipId = useId();
 	const gradientId = `${clipId}-ink`;
 	const lightInkClass = `dark:hidden ${color ? "fill-(--desert-sand-deep)" : ""}`;
-	const darkInkClass = color
-		? "hidden dark:block [--terrain-ink-0:var(--desert-sand-shadow)] [--terrain-ink-1:var(--desert-sand-deep)] [--terrain-ink-2:var(--desert-sand-muted)] [--terrain-ink-3:var(--desert-sand)] [--terrain-ink-4:var(--desert-sand-rim)] [--terrain-ink-5:var(--desert-sand-highlight)]"
-		: "hidden dark:block [--terrain-ink-0:var(--accent)] [--terrain-ink-1:var(--border)] [--terrain-ink-2:#767775] [--terrain-ink-3:#949493] [--terrain-ink-4:var(--muted-foreground)] [--terrain-ink-5:var(--foreground)]";
+	const nightInks = color ? sandstoneNightInks : monochromeNightInks;
 
 	return (
 		<svg
-			role="img"
-			aria-label="Terrain artwork"
-			className={canvasClassName}
+			role={decorative ? undefined : "img"}
+			aria-label={decorative ? undefined : "Terrain artwork"}
+			aria-hidden={decorative || undefined}
+			className="absolute inset-0 block h-full w-full"
 			viewBox={`0 ${terrainFrame.top} ${terrainFrame.width} ${terrainFrame.height}`}
 			preserveAspectRatio="none"
 			style={{ aspectRatio: terrainFrame.aspectRatio }}
@@ -81,13 +77,9 @@ export function TerrainCanvas({
 							d={scene.dotPaths.light}
 							fill={`url(#${gradientId})`}
 						/>
-						<g className={darkInkClass}>
+						<g className="hidden dark:block">
 							{scene.dotPaths.dark.map((path, level) => (
-								<path
-									key={path}
-									d={path}
-									fill={`var(--terrain-ink-${level})`}
-								/>
+								<path key={path} d={path} fill={nightInks[level]} />
 							))}
 						</g>
 					</g>
@@ -96,6 +88,33 @@ export function TerrainCanvas({
 				<polygon points={scene.silhouette} fill="currentColor" />
 			)}
 
+			{children}
+		</svg>
+	);
+}
+
+export function TerrainCanvas({
+	config,
+	selectedId,
+	view,
+	dither,
+	drawingSeams,
+	scene,
+	color,
+	onDraw,
+}: {
+	config: TerrainConfig;
+	selectedId: string;
+	view: ViewSettings;
+	dither: boolean;
+	drawingSeams: boolean;
+	scene: TerrainScene;
+	color: boolean;
+	onDraw: (seam: DrawnSeam) => void;
+}) {
+	const selected = config.shapes.find((shape) => shape.id === selectedId);
+	return (
+		<TerrainArtwork scene={scene} color={color}>
 			{view.showBase && (
 				<polyline
 					points={scene.basePoints}
@@ -164,6 +183,6 @@ export function TerrainCanvas({
 			{drawingSeams && (
 				<TerrainSeamDrawing ridgeAt={scene.ridgeAt} onDraw={onDraw} />
 			)}
-		</svg>
+		</TerrainArtwork>
 	);
 }

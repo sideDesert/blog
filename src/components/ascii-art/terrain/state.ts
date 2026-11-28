@@ -1,6 +1,6 @@
-import { desertDitherColumns, desertDotSize } from "../ditherGlyphs";
 import {
 	createInitialConfig,
+	defaultTerrainRenderSettings,
 	type Irregularities,
 	type RenderSettings,
 	type Shape,
@@ -46,7 +46,6 @@ export type TerrainAction =
 	| { type: "undoSeam" }
 	| { type: "setReference"; reference: string }
 	| { type: "importConfig"; config: TerrainConfig }
-	| { type: "loadConfig"; config: TerrainConfig }
 	| { type: "importFailed" }
 	| { type: "reset" }
 	| SetViewAction
@@ -65,20 +64,16 @@ export type TerrainState = {
 	view: ViewSettings;
 };
 
-export function createInitialState(): TerrainState {
-	const config = createInitialConfig();
-
+export function createInitialState(
+	config = createInitialConfig(),
+): TerrainState {
 	return {
 		config,
 		selectedId: config.shapes[0]?.id ?? "",
 		drawingSeams: false,
 		reference: "",
 		status: "",
-		render: {
-			dither: true,
-			gridSize: 100 / desertDitherColumns,
-			dotSize: desertDotSize,
-		},
+		render: defaultTerrainRenderSettings,
 		view: {
 			showReference: true,
 			showShapes: false,
@@ -203,13 +198,6 @@ export function terrainReducer(
 				config: action.config,
 				selectedId: action.config.shapes[0]?.id ?? "",
 				status: "Terrain imported",
-			};
-
-		case "loadConfig":
-			return {
-				...state,
-				config: action.config,
-				selectedId: action.config.shapes[0]?.id ?? "",
 			};
 
 		case "importFailed":

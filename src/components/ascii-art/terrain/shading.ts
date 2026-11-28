@@ -1,7 +1,9 @@
 import {
-	ditherGlyphs,
+	createDitherStamps,
+	darkInkLevel,
+	darkInkLevels,
 	glyphSize,
-	glyphSizeSteps,
+	terrainGrainAspect,
 	rowPitchRatio,
 	sampleGlyphCell,
 } from "../ditherGlyphs";
@@ -124,7 +126,6 @@ type SeamSegment = {
 	surface: VisibleRidge;
 };
 
-const darkInkLevels = [0.12, 0.27, 0.45, 0.58, 0.72, 1];
 const light = { x: 0.56, height: 0.4, depth: 0.45 };
 const groundSlope = 0.45;
 const skylineDepth = 0.63;
@@ -512,33 +513,22 @@ function terrainInk(
 	};
 }
 
-function darkInkLevel(tone: number, threshold: number) {
-	for (let index = 1; index < darkInkLevels.length; index++) {
-		const low = darkInkLevels[index - 1];
-		const high = darkInkLevels[index];
-		if (tone <= high)
-			return tone > low + (high - low) * threshold ? index : index - 1;
-	}
-	return darkInkLevels.length - 1;
-}
-
 type GlyphRect = { x: number; y: number; path: string };
 
-function createStamps(width: number, height: number) {
-	return Array.from({ length: glyphSizeSteps + 1 }, (_, index) => {
-		const size = index / glyphSizeSteps;
-		return ditherGlyphs.map((glyph) =>
-			glyph.map(([left, top, spanX, spanY]) => {
-				const rectWidth = (width * size * spanX).toFixed(4);
-				const rectHeight = (height * size * spanY).toFixed(4);
-				return {
-					x: (left - 0.5) * width * size,
-					y: (top - 0.5) * height * size,
-					path: `h${rectWidth}v${rectHeight}h-${rectWidth}Z`,
-				};
+function createSvgStamps(
+	width: number,
+	height: number,
+	dotSize: number,
+	daylight: boolean,
+) {
+	return createDitherStamps(width, height, dotSize, daylight).map((sizes) =>
+		sizes.map((glyph) =>
+			glyph.map(({ x, y, width, height }) => {
+				const w = width.toFixed(4);
+				return { x, y, path: `h${w}v${height.toFixed(4)}h-${w}Z` };
 			}),
-		);
-	});
+		),
+	);
 }
 
 function appendGlyph(
@@ -565,13 +555,11 @@ export function createDotPaths(
 ) {
 	const frame = terrainFrame;
 	// Landscape places the terrain in 39.28% of the artwork's width.
-	const squareRowStep = (gridSize * frame.height) / (frame.width * 0.3928);
+	const squareRowStep =
+		(gridSize * frame.height) / (frame.width * terrainGrainAspect);
 	const rowStep = squareRowStep * rowPitchRatio;
-	const lightStamps = createStamps(gridSize * dotSize, squareRowStep * dotSize);
-	const darkStamps = createStamps(
-		gridSize * dotSize * 0.83,
-		(squareRowStep * dotSize) / 0.83,
-	);
+	const lightStamps = createSvgStamps(gridSize, squareRowStep, dotSize, true);
+	const darkStamps = createSvgStamps(gridSize, squareRowStep, dotSize, false);
 	const lightMarks: string[] = [];
 	const darkMarks = darkInkLevels.map(() => [] as string[]);
 	const allDrawnSegments = resolveDrawnSeams(

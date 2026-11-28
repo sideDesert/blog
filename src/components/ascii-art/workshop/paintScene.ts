@@ -4,87 +4,23 @@ import {
 	workshopHeight,
 	workshopWidth,
 } from "./ditherCanvas";
-import { towerSignalLayers } from "./RadioTower";
-import { campfireLightLayers } from "./Campsite";
-import type { WorkshopLayer, WorkshopSceneName } from "./scenes";
-import { awningFabricLayers } from "./Shop";
+import type { CanvasLayer, MotionRegion } from "./sceneLayer";
 
-export type SceneLayer = {
-	id: WorkshopLayer;
-	draw: (ctx: CanvasRenderingContext2D, amount?: number) => void;
+type Paint = {
+	daylight: boolean;
+	dither?: DitherPaint;
 };
-
-type Bounds = { x: number; y: number; width: number; height: number };
-type Patch = { bounds: Bounds; moving: readonly WorkshopLayer[] };
-type Paint = DitherPaint | undefined;
-
-export const beaconPatch: Patch = {
-	bounds: { x: 648, y: 216, width: 76, height: 54 },
-	moving: towerSignalLayers,
-};
-
-export const lampLayers = [
-	"light-spill",
-	"lamplight",
-	"lamp-rim",
-	"lamp",
-] as const;
-// The lamp spill overlaps the right tuft.
-const yuccaAndLampLayers = ["forecourt-yucca", ...lampLayers] as const;
-
-export const lampPatch: Patch = {
-	bounds: { x: 304, y: 333, width: 372, height: 123 },
-	moving: [...yuccaAndLampLayers, ...awningFabricLayers],
-};
-
-export const motionPatches = {
-	projects: [
-		{
-			bounds: { x: 551, y: 320, width: 98, height: 51 },
-			moving: awningFabricLayers,
-		},
-		{
-			bounds: { x: 124, y: 409, width: 104, height: 57 },
-			moving: ["west-yucca"],
-		},
-		{
-			bounds: { x: 625, y: 425, width: 87, height: 50 },
-			moving: yuccaAndLampLayers,
-		},
-		{
-			bounds: { x: 673, y: 380, width: 63, height: 40 },
-			moving: ["awning-yucca"],
-		},
-	],
-	blog: [
-		{
-			bounds: { x: 130, y: 339, width: 112, height: 67 },
-			moving: ["valley-yucca", "cactus-yucca"],
-		},
-		{
-			bounds: { x: 208, y: 423, width: 261, height: 63 },
-			moving: ["west-boulder-yucca", "ledge-yucca"],
-		},
-		{
-			bounds: { x: 823, y: 357, width: 48, height: 44 },
-			moving: ["page-corner"],
-		},
-	],
-	about: [
-		{
-			bounds: { x: 439, y: 319, width: 277, height: 118 },
-			moving: campfireLightLayers,
-		},
-	],
-} satisfies Record<WorkshopSceneName, Patch[]>;
 
 function paintLayer(
 	ctx: CanvasRenderingContext2D,
-	layer: SceneLayer,
+	layer: CanvasLayer,
+	paint: Paint,
 	amount?: number,
 ) {
 	ctx.save();
-	layer.draw(ctx, amount);
+	if (paint.daylight && layer.daylight)
+		layer.daylight(ctx, Boolean(paint.dither), amount);
+	else layer.draw(ctx, amount);
 	ctx.restore();
 }
 
@@ -97,32 +33,30 @@ function makeCanvas(width: number, height: number) {
 
 export function paintWorkshop(
 	ctx: CanvasRenderingContext2D,
-	layers: SceneLayer[],
+	layers: readonly CanvasLayer[],
 	paint: Paint,
 ) {
 	const source =
-		paint && ctx.canvas.width > workshopWidth
+		paint.dither && ctx.canvas.width > workshopWidth
 			? makeCanvas(workshopWidth, workshopHeight).getContext("2d", {
 					willReadFrequently: true,
 				})
 			: ctx;
 	if (!source) return;
 	source.clearRect(0, 0, workshopWidth, workshopHeight);
-	for (const layer of layers) paintLayer(source, layer);
-	if (paint) ditherCanvas(ctx, source, paint);
+	for (const layer of layers) paintLayer(source, layer, paint);
+	if (paint.dither) ditherCanvas(ctx, source, paint.dither);
 }
 
 // Bake the static layers between moving layers so animation keeps the original paint order.
 export function createPatch(
 	target: CanvasRenderingContext2D,
-	layers: SceneLayer[],
-	{ bounds, moving }: Patch,
+	layers: readonly CanvasLayer[],
+	region: MotionRegion,
 	paint: Paint,
 ) {
-	if (!layers.some((layer) => moving.includes(layer.id))) return;
-
 	const padding = 3;
-	const { x, y, width, height } = bounds;
+	const { x, y, width, height } = region;
 	const origin = { x: x - padding, y: y - padding };
 	const patchWidth = width + 2 * padding;
 	const patchHeight = height + 2 * padding;
@@ -131,7 +65,7 @@ export function createPatch(
 	if (!ctx) return;
 	const rasterScale = target.canvas.width / workshopWidth;
 	const output =
-		paint && rasterScale > 1
+		paint.dither && rasterScale > 1
 			? makeCanvas(
 					patchWidth * rasterScale,
 					patchHeight * rasterScale,
@@ -140,11 +74,11 @@ export function createPatch(
 	if (!output) return;
 	if (output !== ctx) output.scale(rasterScale, rasterScale);
 
-	const passes: (HTMLCanvasElement | SceneLayer)[] = [];
+	const passes: (HTMLCanvasElement | CanvasLayer)[] = [];
 	let backdrop: CanvasRenderingContext2D | undefined;
 
 	for (const layer of layers) {
-		if (moving.includes(layer.id)) {
+		if (layer.motion?.includes(region)) {
 			passes.push(layer);
 			backdrop = undefined;
 		} else {
@@ -156,11 +90,11 @@ export function createPatch(
 				passes.push(buffer);
 				backdrop = bufferContext;
 			}
-			paintLayer(backdrop, layer);
+			paintLayer(backdrop, layer, paint);
 		}
 	}
 
-	return (amountFor: (layer: WorkshopLayer) => number) => {
+	return (amountFor: (layer: CanvasLayer) => number) => {
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		for (const pass of passes) {
 			if (pass instanceof HTMLCanvasElement) {
@@ -168,11 +102,11 @@ export function createPatch(
 			} else {
 				ctx.save();
 				ctx.translate(-origin.x, -origin.y);
-				paintLayer(ctx, pass, amountFor(pass.id));
+				paintLayer(ctx, pass, paint, amountFor(pass));
 				ctx.restore();
 			}
 		}
-		if (paint) ditherCanvas(output, ctx, paint, origin);
+		if (paint.dither) ditherCanvas(output, ctx, paint.dither, origin);
 		const outputScale = output.canvas.width / patchWidth;
 		target.clearRect(x, y, width, height);
 		target.drawImage(

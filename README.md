@@ -66,8 +66,9 @@ draft: true
 
 Run `pnpm dev` and open `/posts` to preview drafts. Remove `draft: true` when
 the note is ready to publish. A note without frontmatter stays out of the blog.
-Blog builds exclude draft text. Files committed to the repo follow the repo's
-visibility, and images in the vault can be included in build output.
+Posts, covers, and linked images are compiled at build time. Production builds
+exclude draft posts and attachments used only by drafts. Files committed to the
+repo still follow its visibility.
 
 ## Deploy to Vercel
 

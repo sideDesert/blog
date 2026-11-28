@@ -1,57 +1,22 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Button } from "#/components/ui/button";
 import { PostCover } from "#/components/ui/PostCover";
 import { pageHead, siteDescription } from "#/lib/pageHead";
-import { getLinkedPost, getPost, markdownSlug, postImage } from "#/lib/posts";
+import { posts } from "virtual:posts";
 import "./post.css";
 
-type MarkdownNode = {
-	type: string;
-	tagName?: string;
-	value?: string;
-	children?: MarkdownNode[];
-	properties?: Record<string, unknown>;
-};
-
-function headingText(node: MarkdownNode): string {
-	return node.value ?? node.children?.map(headingText).join("") ?? "";
-}
-
-function markdownHeadings() {
-	return (tree: MarkdownNode) => {
-		const used = new Set<string>();
-
-		function visit(node: MarkdownNode) {
-			if (node.tagName && /^h[1-6]$/.test(node.tagName) && node.properties) {
-				const base = markdownSlug(headingText(node)) || "section";
-				let id = base;
-
-				for (let count = 2; used.has(id); count++) {
-					id = `${base}-${count}`;
-				}
-
-				node.properties.id ??= id;
-				used.add(id);
-			}
-
-			node.children?.forEach(visit);
-		}
-
-		visit(tree);
-	};
-}
-
 export const Route = createFileRoute("/posts/$slug")({
-	loader: ({ params }) => {
-		const post = getPost(params.slug);
+	loader: async ({ params }) => {
+		const post = posts.find(({ slug }) => slug === params.slug);
 
 		if (!post) {
 			throw notFound();
 		}
 
-		return post;
+		const { postBodies } = await import("virtual:post-bodies");
+		const html = postBodies[post.slug];
+		if (html === undefined) throw notFound();
+		return { ...post, html };
 	},
 	head: ({ loaderData }) =>
 		loaderData
@@ -87,56 +52,11 @@ function Post() {
 						className="mt-6 aspect-2/1 w-full max-w-xl border border-border object-cover"
 					/>
 				</header>
-				<div className="post-body mt-8">
-					<Markdown
-						skipHtml
-						remarkPlugins={[remarkGfm]}
-						rehypePlugins={[markdownHeadings]}
-						components={{
-							a({ node: _node, href, children, ...props }) {
-								const linked = href && getLinkedPost(post.file, href);
-
-								if (linked) {
-									return (
-										<Link
-											to="/posts/$slug"
-											params={{ slug: linked.post.slug }}
-											hash={markdownSlug(linked.hash) || undefined}
-										>
-											{children}
-										</Link>
-									);
-								}
-
-								return (
-									<a
-										{...props}
-										href={(href && postImage(post.file, href)) || href}
-									>
-										{children}
-									</a>
-								);
-							},
-							img({ node: _node, src, alt, ...props }) {
-								const image =
-									typeof src === "string"
-										? postImage(post.file, src)
-										: undefined;
-
-								return (
-									<img
-										{...props}
-										alt={alt ?? ""}
-										loading="lazy"
-										src={image ?? src}
-									/>
-								);
-							},
-						}}
-					>
-						{post.body}
-					</Markdown>
-				</div>
+				<div
+					className="post-body mt-8"
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: The compiler escapes content and skips raw HTML.
+					dangerouslySetInnerHTML={{ __html: post.html }}
+				/>
 			</article>
 		</main>
 	);

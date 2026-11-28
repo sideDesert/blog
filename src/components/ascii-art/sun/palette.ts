@@ -1,9 +1,9 @@
+import type { ResolvedTheme } from "#/lib/appearance";
+
 export type SunPalette = {
 	lowHeat: string;
 	highHeat: string;
 };
-
-export type SunTheme = "light" | "dark";
 
 export type SunPaletteVariant =
 	| "lightColor"
@@ -34,7 +34,10 @@ export const DEFAULT_SUN_TRAIL_COLORS: SunTrailColors = {
 	darkMonochrome: "#e6e6e6",
 };
 
-function variantFor(theme: SunTheme, colorEnabled: boolean): SunPaletteVariant {
+function variantFor(
+	theme: ResolvedTheme,
+	colorEnabled: boolean,
+): SunPaletteVariant {
 	if (theme === "light") {
 		return colorEnabled ? "lightColor" : "lightMonochrome";
 	}
@@ -44,7 +47,7 @@ function variantFor(theme: SunTheme, colorEnabled: boolean): SunPaletteVariant {
 
 export function selectSunPalette(
 	palettes: SunPalettes,
-	theme: SunTheme,
+	theme: ResolvedTheme,
 	colorEnabled: boolean,
 ): SunPalette {
 	return palettes[variantFor(theme, colorEnabled)];
@@ -52,7 +55,7 @@ export function selectSunPalette(
 
 export function selectSunTrailColor(
 	colors: SunTrailColors,
-	theme: SunTheme,
+	theme: ResolvedTheme,
 	colorEnabled: boolean,
 ): string {
 	return colors[variantFor(theme, colorEnabled)];

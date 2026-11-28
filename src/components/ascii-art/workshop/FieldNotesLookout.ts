@@ -101,6 +101,7 @@ const wallAndStoneLayers = (
 ).map(([id, label, draw]) => ({ id, label, draw, group: "Stone lookout" }));
 
 export const lookoutDither = {
+	order: 2,
 	path: "M797 222l19-9 3-15 38-1 4 17 18 8v12h-82Z",
 	left: 797,
 	top: 197,

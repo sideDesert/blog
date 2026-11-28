@@ -19,12 +19,15 @@ import {
 	sectionHeadingClass,
 	Toolbar,
 } from "#/components/ascii-art/terrain/Controls";
-import { parseTerrainConfig } from "#/components/ascii-art/terrain/model";
 import type {
 	TerrainAction,
 	TerrainState,
 } from "#/components/ascii-art/terrain/state";
-import type { AudioSettings } from "#/lib/hooks/useDesertAudio";
+import {
+	type AudioSettings,
+	exportStudioTerrain,
+	importStudioTerrain,
+} from "#/lib/studioStorage";
 
 const TABS = [
 	{ key: "landscape", label: "Landscape" },
@@ -96,7 +99,7 @@ function LandscapeTools({
 }) {
 	function exportConfig() {
 		const url = URL.createObjectURL(
-			new Blob([JSON.stringify(state.config, null, 2)], {
+			new Blob([exportStudioTerrain(state.config)], {
 				type: "application/json",
 			}),
 		);
@@ -110,7 +113,7 @@ function LandscapeTools({
 
 	async function importConfig(file: File) {
 		try {
-			const config = parseTerrainConfig(JSON.parse(await file.text()));
+			const config = importStudioTerrain(JSON.parse(await file.text()));
 			if (!config) throw new Error("Invalid terrain");
 			dispatch({ type: "importConfig", config });
 		} catch {
@@ -319,7 +322,6 @@ export default function Playground({
 	audioSettings,
 	onAudioToggle,
 	onAudioUpdate,
-	onClose,
 	className,
 }: {
 	terrainState: TerrainState;
@@ -334,7 +336,6 @@ export default function Playground({
 	audioSettings: AudioSettings;
 	onAudioToggle: () => void;
 	onAudioUpdate: (key: keyof AudioSettings, value: number) => void;
-	onClose: () => void;
 	className?: string;
 }) {
 	const [tab, setTab] = useState<PlaygroundTab>("landscape");
@@ -356,18 +357,6 @@ export default function Playground({
 			className={`flex min-h-0 flex-col bg-background px-4 py-3 text-xs ${className ?? ""}`}
 			aria-label="Desert playground"
 		>
-			<div className="flex shrink-0 items-center justify-between gap-2 pb-2">
-				<strong>Desert playground</strong>
-				<button
-					className={controlButtonClass}
-					type="button"
-					onClick={onClose}
-					title="Close playground"
-				>
-					Close
-				</button>
-			</div>
-
 			<nav
 				aria-label="Playground sections"
 				className="flex shrink-0 flex-wrap gap-2 pb-3"

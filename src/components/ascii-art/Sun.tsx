@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useMoonChime } from "#/lib/hooks/useMoonChime";
 import {
 	createSunInk,
 	DEFAULT_SUN_PALETTES,
@@ -34,6 +33,8 @@ export type SunProps = {
 	palette?: SunPalette;
 	trailColor?: string;
 	label?: "Sun" | "Moon";
+	motion: boolean;
+	onBrush?: (strength: number) => void;
 	className?: string;
 };
 
@@ -127,10 +128,11 @@ export default function Sun({
 	palette = DEFAULT_SUN_PALETTES.lightColor,
 	trailColor = DEFAULT_SUN_TRAIL_COLORS.lightColor,
 	label = "Sun",
+	motion,
+	onBrush,
 	className,
 }: SunProps) {
 	const ref = useRef<SVGSVGElement>(null);
-	const chime = useMoonChime({ enabled: label === "Moon" });
 
 	const ink = useMemo(() => createSunInk(palette), [palette]);
 
@@ -165,7 +167,7 @@ export default function Sun({
 	useEffect(() => {
 		const svg = ref.current;
 
-		if (!svg) return;
+		if (!svg || !motion) return;
 
 		const animatedDots = svg.querySelectorAll<SVGRectElement>(
 			'rect[data-animate="true"]',
@@ -201,13 +203,13 @@ export default function Sun({
 				dot.style.removeProperty("fill");
 			});
 		};
-	}, [dots, ink]);
+	}, [dots, ink, motion]);
 
 	// Independent ASCII trail animation.
 	useEffect(() => {
 		const svgElement = ref.current;
 
-		if (!svgElement) return;
+		if (!svgElement || !motion) return;
 
 		const elements =
 			svgElement.querySelectorAll<SVGTextElement>("text[data-trail]");
@@ -331,7 +333,7 @@ export default function Sun({
 			}
 
 			if (strokeStrength > 0.25) {
-				chime.strike(strokeStrength);
+				onBrush?.(strokeStrength);
 			}
 		}
 
@@ -410,7 +412,7 @@ export default function Sun({
 				element.textContent = "";
 			});
 		};
-	}, [dots, chime.strike]);
+	}, [dots, onBrush, motion]);
 
 	return (
 		<svg
@@ -419,9 +421,6 @@ export default function Sun({
 			className={className ?? "w-96"}
 			role="img"
 			aria-label={label}
-			onPointerEnter={() => {
-				void chime.unlock();
-			}}
 		>
 			<g>
 				{dots.map((dot) => (

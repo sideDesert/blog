@@ -1,3 +1,4 @@
+import { desertDitherColumns, desertDotSize } from "../ditherGlyphs";
 import {
 	type DepthBlock,
 	type DrawnSeam,
@@ -39,6 +40,12 @@ export type RenderSettings = {
 	dither: boolean;
 	gridSize: number;
 	dotSize: number;
+};
+
+export const defaultTerrainRenderSettings: RenderSettings = {
+	dither: true,
+	gridSize: 100 / desertDitherColumns,
+	dotSize: desertDotSize,
 };
 
 export type ViewSettings = {
@@ -167,7 +174,6 @@ const legacyImportNoise: Irregularities = {
 };
 
 const shapeKeys: readonly (keyof Shape)[] = [
-	"id",
 	"name",
 	"operation",
 	"center",
@@ -201,32 +207,39 @@ function isSeamShape(value: unknown): value is SeamShape {
 	);
 }
 
+const shapeDefaults = {
+	name: "Shape",
+	operation: "max",
+	center: 50,
+	height: 30,
+	plateau: 5,
+	leftWidth: 20,
+	rightWidth: 10,
+	leftPower: 1,
+	rightPower: 1,
+} satisfies Omit<Shape, "id">;
+
 export function createShape(overrides: Partial<Shape> = {}): Shape {
-	return {
-		name: "Shape",
-		operation: "max",
-		center: 50,
-		height: 30,
-		plateau: 5,
-		leftWidth: 20,
-		rightWidth: 10,
-		leftPower: 1,
-		rightPower: 1,
-		...overrides,
-		id: crypto.randomUUID(),
-	};
+	return { ...shapeDefaults, ...overrides, id: crypto.randomUUID() };
 }
 
 export function createInitialConfig(): TerrainConfig {
 	return {
-		shapes: silhouette.shapes.map((shape) =>
-			createShape({ ...shape, operation: shape.operation as Operation }),
-		),
+		shapes: silhouette.shapes.map((shape, index) => ({
+			...shapeDefaults,
+			...shape,
+			operation: shape.operation as Operation,
+			id: `default-shape-${index + 1}`,
+		})),
 		noise: { ...silhouette.noise },
 		verticalScale: silhouette.verticalScale,
 		depthBlocks: [...silhouette.depthBlocks],
 		drawnSeams: silhouette.drawnSeams.filter(isDrawnSeam),
 	};
+}
+
+function isShapeId(value: unknown): value is string {
+	return typeof value === "string" && value.trim().length > 0;
 }
 
 export function parseTerrainConfig(value: unknown): TerrainConfig | null {
@@ -238,7 +251,11 @@ export function parseTerrainConfig(value: unknown): TerrainConfig | null {
 
 	if (!Array.isArray(imported)) return null;
 
-	const shapes = imported.map((item) => {
+	const reservedIds = new Set(
+		imported.map((item) => item?.id).filter(isShapeId),
+	);
+	const assignedIds = new Set<string>();
+	const shapes = imported.map((item, index) => {
 		const raw =
 			item && typeof item === "object" ? (item as Record<string, unknown>) : {};
 		const overrides: Record<string, unknown> = {};
@@ -247,9 +264,19 @@ export function parseTerrainConfig(value: unknown): TerrainConfig | null {
 			if (key in raw) overrides[key] = raw[key];
 		}
 
-		const shape = createShape(overrides as Partial<Shape>);
+		const savedId = raw.id;
+		let id: string;
+		if (isShapeId(savedId) && !assignedIds.has(savedId)) {
+			id = savedId;
+		} else {
+			id = `legacy-shape-${index + 1}`;
+			while (reservedIds.has(id) || assignedIds.has(id)) id += "-";
+		}
+		assignedIds.add(id);
+		const shape = { ...shapeDefaults, ...overrides, id } as Shape;
 
 		if (
+			typeof shape.name !== "string" ||
 			!isOperation(shape.operation) ||
 			(shape.seam !== undefined && !isSeamShape(shape.seam)) ||
 			shapeControls.some(

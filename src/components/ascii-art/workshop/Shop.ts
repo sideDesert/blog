@@ -413,11 +413,20 @@ function drawAwningHem(ctx: CanvasRenderingContext2D, seconds = 0) {
 	);
 }
 
-export const awningFabricLayers = [
-	"awning",
-	"awning-folds",
-	"awning-hem",
-] as const;
+const awningMotion = {
+	x: 551,
+	y: 320,
+	width: 98,
+	height: 51,
+	trigger: "frame",
+} as const;
+export const lampMotion = {
+	x: 304,
+	y: 333,
+	width: 372,
+	height: 123,
+	trigger: "flicker",
+} as const;
 
 export const awningLayers = (
 	[
@@ -441,11 +450,27 @@ export const awningLayers = (
 			(ctx: CanvasRenderingContext2D) =>
 				fill(ctx, "M670 407l3-2 3 2-4 1Z", "#82715b"),
 		],
-		[awningFabricLayers[0], "Cloth awning", drawAwning],
-		[awningFabricLayers[1], "Shaded folds in the awning", drawAwningFolds],
-		[awningFabricLayers[2], "Lit edge of the awning", drawAwningHem],
+		["awning", "Cloth awning", drawAwning, [awningMotion, lampMotion]],
+		[
+			"awning-folds",
+			"Shaded folds in the awning",
+			drawAwningFolds,
+			[awningMotion, lampMotion],
+		],
+		[
+			"awning-hem",
+			"Lit edge of the awning",
+			drawAwningHem,
+			[awningMotion, lampMotion],
+		],
 	] as const
-).map(([id, label, draw]) => ({ id, label, draw, group: "Awning" }));
+).map(([id, label, draw, motion]) => ({
+	id,
+	label,
+	draw,
+	motion,
+	group: "Awning",
+}));
 
 export function drawHangingRope(ctx: CanvasRenderingContext2D) {
 	stroke(

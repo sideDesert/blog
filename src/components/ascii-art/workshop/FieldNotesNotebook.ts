@@ -21,12 +21,7 @@ const rightPage =
 	"M744 434q21-31 37-68 36-4 78 9l-30 68C799 438 768 424 744 434Z";
 const paperPath = `${leftPage} ${rightPage}`;
 const frontEdge = "M644 421C677 419 721 414 744 434C768 424 799 438 829 443";
-export const notebookPaperFaces = new Map([
-	["notebook-left-page", leftPage],
-	["notebook-right-page", rightPage],
-]);
-
-export function drawDaylightPage(
+function drawDaylightPage(
 	ctx: CanvasRenderingContext2D,
 	path: string,
 	dither: boolean,
@@ -47,7 +42,7 @@ export function drawDaylightPage(
 const cover =
 	"M637 427l62-68q53-10 82 7 38-5 83 9l-33 80c-34-2-65-13-87-12q-6 4-13-2c-27-8-64-8-94-10Z";
 
-export const notebookDither = {
+const notebookDither = {
 	path: cover,
 	left: 635,
 	top: 351,
@@ -107,6 +102,10 @@ const notebookPageLayers = (
 	]) => ({
 		id,
 		label,
+		paperFace: path,
+		detail: notebookDither,
+		daylight: (ctx: CanvasRenderingContext2D, dither: boolean) =>
+			drawDaylightPage(ctx, path, dither),
 		draw(ctx: CanvasRenderingContext2D) {
 			const shade = ctx.createLinearGradient(startX, startY, endX, endY);
 			for (const [offset, color] of stops) shade.addColorStop(offset, color);
@@ -412,7 +411,8 @@ const pencilOutline = [
 			`${pencilTip.x + along * Math.cos(pencilAngle) - across * Math.sin(pencilAngle)} ${pencilTip.y + along * Math.sin(pencilAngle) + across * Math.cos(pencilAngle)}`,
 	)
 	.join(" ");
-export const pencilDither = {
+const pencilDither = {
+	order: 1,
 	path: `M${pencilOutline}Z`,
 	left: 843,
 	top: 375,
@@ -493,6 +493,7 @@ const pencilLayers = (
 	id,
 	label,
 	group: "Pencil",
+	detail: pencilDither,
 	draw(ctx: CanvasRenderingContext2D) {
 		ctx.translate(pencilTip.x, pencilTip.y);
 		ctx.rotate(pencilAngle);
@@ -500,18 +501,48 @@ const pencilLayers = (
 	},
 }));
 
+const pageCornerMotion = {
+	x: 823,
+	y: 357,
+	width: 48,
+	height: 44,
+	trigger: "frame",
+} as const;
+
 export const notebookLayers = [
 	{ id: "notebook-shadow", label: "Notebook shadow", draw: drawNotebookShadow },
-	{ id: "notebook-cover", label: "Notebook cover", draw: drawNotebookCover },
+	{
+		id: "notebook-cover",
+		label: "Notebook cover",
+		detail: notebookDither,
+		draw: drawNotebookCover,
+	},
 	...notebookPageLayers,
-	{ id: "notebook-paper-grain", label: "Paper grain", draw: drawPaperGrain },
-	{ id: "pages", label: "Stacked page edges", draw: drawPageEdges },
-	{ id: "notebook-spine", label: "Notebook spine", draw: drawNotebookSpine },
+	{
+		id: "notebook-paper-grain",
+		label: "Paper grain",
+		nightOnly: true,
+		detail: notebookDither,
+		draw: drawPaperGrain,
+	},
+	{
+		id: "pages",
+		label: "Stacked page edges",
+		detail: notebookDither,
+		draw: drawPageEdges,
+	},
+	{
+		id: "notebook-spine",
+		label: "Notebook spine",
+		detail: notebookDither,
+		draw: drawNotebookSpine,
+	},
 	{ id: "ink", label: "Handwritten notes", draw: drawHandwrittenNotes },
 	{
 		id: "mesa-sketch",
 		label: "Mesa sketch",
 		draw: (ctx: CanvasRenderingContext2D) => drawMesaSketch(ctx),
+		daylight: (ctx: CanvasRenderingContext2D) => drawMesaSketch(ctx, true),
 	},
 	{ id: "route-sketch", label: "Route sketch", draw: drawRouteSketch },
 	{ id: "plant-sketch", label: "Plant sketch", draw: drawPlantSketch },
@@ -519,21 +550,19 @@ export const notebookLayers = [
 		id: "rock-sketch",
 		label: "Rock sketch",
 		draw: (ctx: CanvasRenderingContext2D) => drawRockSketch(ctx),
+		daylight: (ctx: CanvasRenderingContext2D) => drawRockSketch(ctx, true),
 	},
-	{ id: "page-corner", label: "Loose page corner", draw: drawPageCorner },
+	{
+		id: "page-corner",
+		label: "Loose page corner",
+		draw: drawPageCorner,
+		motion: [pageCornerMotion],
+		daylight: (
+			ctx: CanvasRenderingContext2D,
+			dither: boolean,
+			seconds?: number,
+		) => drawPageCorner(ctx, seconds, dither ? "dither" : "flat"),
+	},
 	{ id: "pencil-shadow", label: "Pencil shadow", draw: drawPencilShadow },
 	...pencilLayers,
 ] as const;
-
-export const daylightNotebookDetails = new Map<
-	string,
-	(ctx: CanvasRenderingContext2D, dither: boolean, seconds?: number) => void
->([
-	[
-		"page-corner",
-		(ctx, dither, seconds) =>
-			drawPageCorner(ctx, seconds, dither ? "dither" : "flat"),
-	],
-	["mesa-sketch", (ctx) => drawMesaSketch(ctx, true)],
-	["rock-sketch", (ctx) => drawRockSketch(ctx, true)],
-]);

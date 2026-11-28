@@ -1,3 +1,4 @@
+import { scenes } from "#/components/ascii-art/workshop/scenes";
 import { pageHead } from "#/lib/pageHead";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -120,7 +121,7 @@ function Projects() {
 			<DesertPageIntro
 				title="Projects"
 				description="Things I’ve built to learn how software works."
-				landscape={<WorkshopScene scene="projects" />}
+				landscape={<WorkshopScene scene={scenes.projects.public} />}
 			>
 				<Link
 					to="/workshop"
