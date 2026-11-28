@@ -46,7 +46,7 @@ export function DesertCelestial({
 	return (
 		<button
 			type="button"
-			className={`absolute top-[22%] left-[61.2%] z-10 ${theme === "dark" ? "w-18" : "w-[16%]"} translate-x-[-47%] translate-y-[-48%] cursor-pointer rounded-full border-0 bg-none p-0 focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-foreground`}
+			className="absolute top-[22%] left-[61.2%] z-10 w-18 translate-x-[-47%] translate-y-[-48%] cursor-pointer rounded-full border-0 bg-none p-0 focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-foreground"
 			aria-label="Desert colors"
 			aria-pressed={color}
 			title={color ? "Turn colors off" : "Turn colors on"}
